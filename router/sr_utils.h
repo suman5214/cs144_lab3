@@ -29,6 +29,11 @@
 #define SR_UTILS_H
 
 uint16_t cksum(const void *_data, int len);
+uint32_t ip_cksum (sr_ip_hdr_t *ipHdr, int len);
+uint32_t icmp_cksum (sr_icmp_hdr_t *icmpHdr, int len);
+uint32_t icmp3_chksum(sr_icmp_t3_hdr_t *icmp3_hdr, int len);
+int is_packet_valid(uint8_t *, unsigned int);
+uint8_t *generate_ethernet_addr(uint8_t);
 
 uint16_t ethertype(uint8_t *buf);
 uint8_t ip_protocol(uint8_t *buf);

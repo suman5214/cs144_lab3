@@ -106,6 +106,15 @@ struct sr_arpcache {
     pthread_mutexattr_t attr;
 };
 
+void sr_arpcache_sweepreqs(struct sr_instance *sr);
+void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req);
+void host_unreachable(struct sr_instance *sr, struct sr_arpreq *req);
+
+/* Checks if an IP->MAC mapping is in the cache. If it is, it "refreshes" the
+   the respective entry and returns 1. If it isn't, it does nothing, and
+   returns 0. IP is in network byte order. */
+int sr_arpcache_entry_update(struct sr_arpcache *cache, uint32_t ip);
+
 /* Checks if an IP->MAC mapping is in the cache. IP is in network byte order. 
    You must free the returned structure if it is not NULL. */
 struct sr_arpentry *sr_arpcache_lookup(struct sr_arpcache *cache, uint32_t ip);
@@ -146,7 +155,5 @@ void sr_arpcache_dump(struct sr_arpcache *cache);
 int   sr_arpcache_init(struct sr_arpcache *cache);
 int   sr_arpcache_destroy(struct sr_arpcache *cache);
 void *sr_arpcache_timeout(void *cache_ptr);
-
-void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req);
 
 #endif

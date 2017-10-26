@@ -11,6 +11,11 @@
 #include "sr_if.h"
 #include "sr_protocol.h"
 
+/* 
+  This function gets called every second. For each request sent out, we keep
+  checking whether we should resend an request or destroy the arp request.
+  See the comments in the header file for an idea of what it should look like.
+*/
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
    struct sr_arpreq *currReq = sr->cache.requests;
    struct sr_arpreq *nextReq;
@@ -58,6 +63,31 @@ void host_unreachable(struct sr_instance *sr, struct sr_arpreq *req) {
                                currPacket->buf + ipOffset);
         currPacket = currPacket->next;
     }
+}
+
+/* Checks if an IP->MAC mapping is in the cache. If it is, it "refreshes" the
+   the respective entry and returns 1. If it isn't, it does nothing, and
+   returns 0. IP is in network byte order. */
+int sr_arpcache_entry_update(struct sr_arpcache *cache, uint32_t ip) {
+     pthread_mutex_lock(&(cache->lock));
+     struct sr_arpentry *entry = NULL;
+     int i;
+
+     for (i = 0; i < SR_ARPCACHE_SZ; i++) {
+         if ((cache->entries[i].valid) && (cache->entries[i].ip == ip)) {
+             entry = &(cache->entries[i]);
+             break;
+         }
+     }
+ 
+     if (entry != NULL) {
+         entry->added = time(NULL);
+         pthread_mutex_unlock(&(cache->lock));
+         return 1;
+     } else {
+         pthread_mutex_unlock(&(cache->lock));
+         return 0;
+     }
 }
 
 /* You should not need to touch the rest of this code. */
