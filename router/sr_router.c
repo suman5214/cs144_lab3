@@ -256,7 +256,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
   /* "refresh" the ARP cache entry associated with sender IP address
      if such an entry already exists. */
   int update_flag = sr_arpcache_entry_update(&(sr->cache), senderIP); 
-
+  struct sr_arpentry *cached = sr_arpcache_lookup(&(sr->cache), senderIP); 
   /* check if the ARP packet is for one of my interfaces. */
   struct sr_if *myInterface = sr_get_interface_given_ip(sr, targetIP); 
 
@@ -283,7 +283,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
     printf("**** -> It is an ARP reply.\n");
     printf("***** -> Add MAC->IP mapping of sender to my ARP cache.\n");
 
-    if (update_flag == 0) {
+    if (!cached) {
       struct sr_arpreq *arpReq = sr_arpcache_insert(&(sr->cache), senderHardAddr, senderIP);
       if (arpReq != NULL) {
         printf("****** -> Send outstanding packets.\n");
