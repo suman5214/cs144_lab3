@@ -97,12 +97,22 @@ void sr_handlepacket(struct sr_instance* sr,
       }
       print_hdr_arp(packet+ethernet_len);
       sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (packet + ethernet_len);
-    
+
       if (ntohs(arp_hdr->ar_op) == arp_op_request){
-        printf("****ARP REQUEST!!!!!!");
+        printf("****ARP REQUEST!!!!!!\n");
+
+        if (sr_get_interface_given_ip(sr, arp_hdr->ar_tip) == 0){
+          printf("IP not on network");
+        }
+
+        if(sr_arpcache_entry_update(&(sr->cache), arp_hdr->ar_sip)){
+          sr_arpcache_insert(&(sr->cache), arp_hdr->ar_sha, arp_sip);
+          printf("Add MAC->IP mapping of sender to my ARP cache.\n");
+        }
       }
+
       else if (ntohs(arp_hdr->ar_op) == arp_op_reply){
-        printf("****ARP Reply!!!!!!");
+        printf("****ARP Reply!!!!!\n");
       }
 
     } else if (ethtype == ethertype_ip) {
