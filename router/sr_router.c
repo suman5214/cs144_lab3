@@ -287,14 +287,13 @@ void sr_handle_arp_packet(struct sr_instance *sr,
       printf("****** -> Send outstanding packets.\n");
 
       struct sr_packet *unsent_packet = arpReq->packets;
-      sr_ethernet_hdr_t *eth_hdr;
+      
 
-      while (unsent_packet != NULL)
+      while (unsent_packet)
       {
-        eth_hdr = (sr_ethernet_hdr_t *)unsent_packet->buf;
+        sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)unsent_packet->buf;
         memcpy(eth_hdr->ether_shost, myInterface->addr, ETHER_ADDR_LEN);
         memcpy(eth_hdr->ether_dhost, senderHardAddr, ETHER_ADDR_LEN);
-
 
         sr_send_packet(sr, unsent_packet->buf, unsent_packet->len, myInterface);
         unsent_packet = unsent_packet->next;
