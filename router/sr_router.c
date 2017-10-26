@@ -387,6 +387,8 @@ void switch_route(struct sr_instance *sr,
 {
 
   uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
+  uint32_t ipDst = ipHdr->ip_dst;
+  uint32_t ipSrc = ipHdr->ip_src;
 
   struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipHdr->ip_dst);
 
@@ -456,24 +458,4 @@ void switch_route(struct sr_instance *sr,
 
     printf("********* -> IP packet processing complete.\n");
   }
-}
-
-struct sr_if* sr_get_interface_given_ip(struct sr_instance* sr, uint32_t ip)
-{
-    struct sr_if* if_walker = 0;
-
-    /* -- REQUIRES -- */
-    assert(ip);
-    assert(sr);
-
-    if_walker = sr->if_list;
-
-    while(if_walker)
-    {
-       if(if_walker->ip == ip)
-        { return if_walker; }
-        if_walker = if_walker->next;
-    }
-
-    return 0;
 }
