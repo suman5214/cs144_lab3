@@ -288,19 +288,15 @@ void sr_handle_arp_packet(struct sr_instance *sr,
 
       struct sr_packet *currPacket = arpReq->packets;
       sr_ethernet_hdr_t *ethHdr;
-      uint8_t *copyPacket;
 
       while (currPacket != NULL)
       {
         ethHdr = (sr_ethernet_hdr_t *)currPacket->buf;
-        memcpy(ethHdr->ether_shost, myInterface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
-        memcpy(ethHdr->ether_dhost, senderHardAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+        memcpy(ethHdr->ether_shost, myInterface->addr, ETHER_ADDR_LEN);
+        memcpy(ethHdr->ether_dhost, senderHardAddr, ETHER_ADDR_LEN);
 
-        copyPacket = malloc(sizeof(uint8_t) * currPacket->len);
-        memcpy(copyPacket, ethHdr, sizeof(uint8_t) * currPacket->len);
 
-        print_hdrs(copyPacket, currPacket->len);
-        sr_send_packet(sr, copyPacket, currPacket->len, myInterface);
+        sr_send_packet(sr, currPacket->buf, currPacket->len, myInterface);
         currPacket = currPacket->next;
       }
       sr_arpreq_destroy(&(sr->cache), arpReq);
