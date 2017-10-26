@@ -22,9 +22,6 @@
 #include "sr_arpcache.h"
 #include "sr_utils.h"
 
-#include <stdlib.h>
-#include <string.h>
-
 /*---------------------------------------------------------------------
  * Method: sr_init(void)
  * Scope:  Global
@@ -79,7 +76,7 @@ void sr_handlepacket(struct sr_instance* sr,
   assert(packet);
   assert(interface);
 
-  printf("** -> Received packet of length %d. Print ethernet header.\n", len);
+  printf("** -> Received packet of length %d\n", len);
   print_hdr_eth(packet);
 
   sr_ethernet_hdr_t *eHdr = (sr_ethernet_hdr_t *) packet;
@@ -91,7 +88,7 @@ void sr_handlepacket(struct sr_instance* sr,
 
   if (is_packet_valid(packet, len)) {
     if (pktType == ethertype_arp) {
-      sr_handle_arp_packet(sr, packet, len, srcAddr, destAddr, interface, eHdr);
+      sr_handle_arp_packet(sr, packet, len, interface);
     } else if (pktType == ethertype_ip) {
       sr_handle_ip_packet(sr, packet, len, srcAddr, destAddr, interface, eHdr);
     }
@@ -142,16 +139,16 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip) {
         memcpy(ethHdr->ether_shost, (uint8_t *) currIf->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
         ethHdr->ether_type = htons(ethertype_arp);
 
-        sr_arp_hdr_t *arpHdr = (sr_arp_hdr_t *) (arpPacket + sizeof(sr_ethernet_hdr_t));
-        arpHdr->ar_hrd = htons(1);
-        arpHdr->ar_pro = htons(2048);
-        arpHdr->ar_hln = 6;
-        arpHdr->ar_pln = 4;
-        arpHdr->ar_op = htons(arp_op_request);
-        memcpy(arpHdr->ar_sha, currIf->addr, ETHER_ADDR_LEN);
-        memcpy(arpHdr->ar_tha, (char *) generate_ethernet_addr(0), ETHER_ADDR_LEN);
-        arpHdr->ar_sip = currIf->ip;
-        arpHdr->ar_tip = ip; 
+        sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (arpPacket + sizeof(sr_ethernet_hdr_t));
+        arp_hdr->ar_hrd = htons(1);
+        arp_hdr->ar_pro = htons(2048);
+        arp_hdr->ar_hln = 6;
+        arp_hdr->ar_pln = 4;
+        arp_hdr->ar_op = htons(arp_op_request);
+        memcpy(arp_hdr->ar_sha, currIf->addr, ETHER_ADDR_LEN);
+        memcpy(arp_hdr->ar_tha, (char *) generate_ethernet_addr(0), ETHER_ADDR_LEN);
+        arp_hdr->ar_sip = currIf->ip;
+        arp_hdr->ar_tip = ip; 
 
         copyPacket = malloc(arpPacketLen);
         memcpy(copyPacket, ethHdr, arpPacketLen);
@@ -234,30 +231,22 @@ void sr_send_icmp_error_packet(uint8_t type,
     printf("###### -> Send ICMP error processing complete.\n");
 }
 
-void sr_handle_arp_packet(struct sr_instance *sr,
-        uint8_t *packet /* lent */,
-        unsigned int len,
-        uint8_t *srcAddr,
-        uint8_t *destAddr,
-        char *interface /* lent */,   
-        sr_ethernet_hdr_t *eHdr) {
+void sr_handle_arp_packet(struct sr_instance *sr, uint8_t *packet , unsigned int len, char *interface ) {
 
-  printf("*** -> It is an ARP packet. Print ARP header.\n");
-  print_hdr_arp(packet + sizeof(sr_ethernet_hdr_t));
-
-  sr_arp_hdr_t *arpHdr = (sr_arp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
+  sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *) packet;
+  sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
 
   unsigned char senderHardAddr[ETHER_ADDR_LEN], targetHardAddr[ETHER_ADDR_LEN];
-  memcpy(senderHardAddr, arpHdr->ar_sha, ETHER_ADDR_LEN);
-  memcpy(targetHardAddr, arpHdr->ar_tha, ETHER_ADDR_LEN);
+  memcpy(senderHardAddr, arp_hdr->ar_sha, ETHER_ADDR_LEN);
+  memcpy(targetHardAddr, arp_hdr->ar_tha, ETHER_ADDR_LEN);
 
-  uint32_t senderIP = arpHdr->ar_sip;
-  uint32_t targetIP = arpHdr->ar_tip;
-  unsigned short op = ntohs(arpHdr->ar_op);
+  uint32_t senderIP = arp_hdr->ar_sip;
+  uint32_t targetIP = arp_hdr->ar_tip;
+  unsigned short op = ntohs(arp_hdr->ar_op);
 
   /* "refresh" the ARP cache entry associated with sender IP address
      if such an entry already exists. */
-  int update_flag = sr_arpcache_entry_update(&(sr->cache), senderIP); 
+  struct sr_arpentry update_flag = sr_arpcache_lookup(&(sr->cache), senderIP); 
 
   /* check if the ARP packet is for one of my interfaces. */
   struct sr_if *myInterface = sr_get_interface_given_ip(sr, targetIP); 
@@ -268,23 +257,15 @@ void sr_handle_arp_packet(struct sr_instance *sr,
     if (myInterface != 0) {
       printf("***** -> ARP request is for one of my interfaces.\n");
 
-      if (update_flag == 0) {
-        printf("****** -> Add MAC->IP mapping of sender to my ARP cache.\n");
-
-        /* Note: will take care of the entry in the ARP request queue in
-                 the ARP reply processing code. */
-        sr_arpcache_insert(&(sr->cache), senderHardAddr, senderIP);
-      }
-
       printf("****** -> Construct an ARP reply and send it back.\n");
-      memcpy(eHdr->ether_shost, (uint8_t *) myInterface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN); 
-      memcpy(eHdr->ether_dhost, (uint8_t *) senderHardAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+      memcpy(eth_hdr->ether_shost, (uint8_t *) myInterface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN); 
+      memcpy(eth_hdr->ether_dhost, (uint8_t *) senderHardAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
 
-      memcpy(arpHdr->ar_sha, myInterface->addr, ETHER_ADDR_LEN);
-      memcpy(arpHdr->ar_tha, senderHardAddr, ETHER_ADDR_LEN);
-      arpHdr->ar_sip = targetIP;
-      arpHdr->ar_tip = senderIP; 
-      arpHdr->ar_op = htons(arp_op_reply);
+      memcpy(arp_hdr->ar_sha, myInterface->addr, ETHER_ADDR_LEN);
+      memcpy(arp_hdr->ar_tha, senderHardAddr, ETHER_ADDR_LEN);
+      arp_hdr->ar_sip = targetIP;
+      arp_hdr->ar_tip = senderIP; 
+      arp_hdr->ar_op = htons(arp_op_reply);
       print_hdrs(packet, len);
       sr_send_packet(sr, packet, len, myInterface->name);
     }
@@ -293,7 +274,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
     printf("**** -> It is an ARP reply.\n");
     printf("***** -> Add MAC->IP mapping of sender to my ARP cache.\n");
 
-    if (update_flag == 0) {
+    if (update_flag == NULL) {
       struct sr_arpreq *arpReq = sr_arpcache_insert(&(sr->cache), senderHardAddr, senderIP);
       if (arpReq != NULL) {
         printf("****** -> Send outstanding packets.\n");
