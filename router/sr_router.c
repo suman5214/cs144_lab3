@@ -99,12 +99,12 @@ void sr_handlepacket(struct sr_instance* sr,
       sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (packet + ethernet_len);
     
       if (arp_hdr->ar_op == arp_op_request){
-        printf("****ARP REQUEST!!!!!!")
+        printf("****ARP REQUEST!!!!!!");
       }
       else if (arp_hdr->ar_op == arp_op_reply){
-        printf("****ARP Reply!!!!!!")
+        printf("****ARP Reply!!!!!!");
       }
-      
+
     } else if (ethtype == ethertype_ip) {
       printf("**** -> Validate IP packet.\n");
       if (len < sizeof(sr_ip_hdr_t))
