@@ -97,13 +97,19 @@ void sr_handlepacket(struct sr_instance* sr,
       }
       print_hdr_arp(packet+ethernet_len);
       sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (packet + ethernet_len);
+      stuct sr_if check_for_me = sr_get_interface_ip(sr, arp_hdr->ar_tip);
+
+      if ( check_for_me == 0){
+          printf("IP not on network");
+          return;
+      }
 
       if (ntohs(arp_hdr->ar_op) == arp_op_request){
         printf("****ARP REQUEST!!!!!!\n");
 
-        if (sr_get_interface_ip(sr, arp_hdr->ar_tip) == 0){
-          printf("IP not on network");
-        }
+
+
+        struct sr_if *intf = sr_get_interface(sr, interface);
         uint8_t *arpres = malloc(len);
         memcpy(arpres, packet, len);
 
