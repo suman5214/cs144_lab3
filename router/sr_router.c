@@ -80,5 +80,14 @@ void sr_handlepacket(struct sr_instance* sr,
 
   /* fill in code here */
 
+  print_hdr_eth(packet);
+
+  sr_ethernet_hdr_t *eHdr = (sr_ethernet_hdr_t *) packet;
+  uint8_t *destAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
+  uint8_t *srcAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
+  memcpy(destAddr, eHdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+  memcpy(srcAddr, eHdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+  uint16_t pktType = ntohs(eHdr->ether_type);
+
 }/* end sr_ForwardPacket */
 
