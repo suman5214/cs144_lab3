@@ -349,16 +349,6 @@ void sr_handle_ip_packet(struct sr_instance *sr,
   switch_route(sr, packet, len, srcAddr, destAddr, interface, eth_hdr, ipHdr, lpmEntry);
 }
 
-int is_icmp_echo_request(sr_icmp_hdr_t *icmpHdr)
-{
-  return (icmpHdr->icmp_type == 8 && icmpHdr->icmp_code == 0) ? 1 : 0;
-}
-
-int is_icmp_echo_reply(sr_icmp_hdr_t *icmpHdr)
-{
-  return (icmpHdr->icmp_type == 0 && icmpHdr->icmp_code == 0) ? 1 : 0;
-}
-
 /* Return an icmp echo reply message where the packet
    is the icmp echo request.
  */
@@ -420,7 +410,7 @@ void switch_route(struct sr_instance *sr,
 
       sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
-      if (is_icmp_echo_request(icmpHdr))
+      if (icmpHdr->icmp_type == 8)
       {
         printf("******** -> It is an ICMP echo request. Send ICMP echo reply.\n");
         icmp_direct_echo_reply(sr, packet, len, srcAddr, destAddr, interface, eth_hdr, ipHdr, icmpHdr);
@@ -458,8 +448,6 @@ void switch_route(struct sr_instance *sr,
 
         memcpy(eth_hdr->ether_dhost, arp_request->mac, ETHER_ADDR_LEN);
         memcpy(eth_hdr->ether_shost, outInterface->addr, ETHER_ADDR_LEN);
-
-        print_hdrs(packet, len);
         sr_send_packet(sr, packet, len, outInterface);
       }
       else
