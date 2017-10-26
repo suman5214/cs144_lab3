@@ -259,11 +259,10 @@ void icmp_direct_echo_reply(struct sr_instance *sr,
 
   icmpHdr->icmp_type = 0;
   icmpHdr->icmp_code = 0;
-  icmpHdr->icmp_sum = icmp_cksum(icmpHdr, len - icmpOffset);
+  
 
   ipHdr->ip_dst = ipHdr->ip_src;
   ipHdr->ip_src = myInterface->ip;
-  ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
   memcpy(eHdr->ether_dhost, srcAddr, sizeof(uint8_t) * ETHER_ADDR_LEN); 
   memcpy(eHdr->ether_shost, destAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
@@ -297,7 +296,6 @@ void switch_route(struct sr_instance *sr,
       printf("****** -> TTL field is now 0. Send time exceeded.\n");
       sr_send_icmp_error_packet(11, 0, sr, ipSrc, (uint8_t*) ipHdr);
     } else {
-      ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t)); /* recompute checksum */            
       
       uint32_t nextHopIP = (uint32_t) lpmEntry->gw.s_addr;
       struct sr_arpentry *arpEntry = sr_arpcache_lookup(&sr->cache, nextHopIP);
@@ -380,7 +378,6 @@ void sr_send_icmp_error_packet(uint8_t type,
     icmp3Hdr->icmp_code = code;
     
     memcpy(icmp3Hdr->data, ipPacket, ICMP_DATA_SIZE);
-    icmp3Hdr->icmp_sum = icmp3_cksum(icmp3Hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
 
     printf("### -> Check routing table, perform LPM.\n");
     struct sr_rt *lpmEntry = sr_get_lpm_entry(sr->routing_table, ipDst);
@@ -391,7 +388,6 @@ void sr_send_icmp_error_packet(uint8_t type,
         struct sr_if *interface = sr_get_interface(sr, lpmEntry->interface);
 
         ipHdr->ip_src = interface->ip;
-        ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
         memcpy(ethHdr->ether_shost, (uint8_t *) interface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
         struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), nextHopIP);
