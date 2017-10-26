@@ -89,8 +89,7 @@ void sr_handlepacket(struct sr_instance* sr,
   memcpy(srcAddr, eth_hdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
   uint16_t ethtype = ethertype(packet);
 
-  if (is_packet_valid(packet, len)) {
-    if (ethtype == ethertype_arp) {
+  if (ethtype == ethertype_arp) {
       printf("**** -> Validate ARP packet.\n");
       if (len >= sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t)) {
        printf("***** -> Invalid packet length.\n");
@@ -103,9 +102,8 @@ void sr_handlepacket(struct sr_instance* sr,
       {
         printf("***** -> Packet length is not correct.\n");
       }
-      // sr_handle_ip_packet(sr, packet, len, srcAddr, destAddr, interface, eHdr);
     }
-  }
+
 
 }/* end sr_ForwardPacket */
 
