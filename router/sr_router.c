@@ -378,6 +378,8 @@ void sr_handle_ip_packet(struct sr_instance *sr,
   }
 
   switch_route(sr, packet, len, srcAddr, destAddr, interface, eth_hdr, ipHdr, lpmEntry);
+  uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
+  struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipHdr->ip_dst);
 }
 
 
@@ -399,7 +401,6 @@ void switch_route(struct sr_instance *sr,
 {
 
   uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
-
   struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipHdr->ip_dst);
 
   if (myInterface)
