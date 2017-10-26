@@ -146,7 +146,7 @@ void sr_handlepacket(struct sr_instance* sr,
         memcpy(arpres_arp_hdr->ar_tha, arp_hdr->ar_sha, ETHER_ADDR_LEN); /* Target MAC address */
         arpres_arp_hdr->ar_tip = arp_hdr->ar_sip;                        /* Target IP address */
 
-        send_packet(sr, arpres, len, intf, arp_hdr->ar_sip);
+        
 
         struct sr_arpentry *cached = sr_arpcache_lookup(&sr->cache, arp_hdr->ar_sip);
 
