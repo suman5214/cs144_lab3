@@ -87,6 +87,37 @@ struct sr_if* sr_get_interface_given_ip(struct sr_instance* sr, uint32_t ip)
     return 0;
 }
 
+void icmp_direct_echo_reply(struct sr_instance *sr,
+  uint8_t *packet /* lent */,
+  unsigned int len,
+  uint8_t *srcAddr,
+  uint8_t *destAddr,
+  char *interface /* lent */,
+  sr_ethernet_hdr_t *eth_hdr,
+  sr_ip_hdr_t *ipHdr,
+  sr_icmp_hdr_t *icmpHdr)
+{
+
+int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
+
+/* We don't have to look up the routing table for this one */
+struct sr_if *myInterface = sr_get_interface(sr, interface);
+
+icmpHdr->icmp_type = 0;
+icmpHdr->icmp_code = 0;
+icmpHdr->icmp_sum = icmp_cksum(icmpHdr, len - icmpOffset);
+
+ipHdr->ip_dst = ipHdr->ip_src;
+ipHdr->ip_src = myInterface->ip;
+ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
+
+memcpy(eth_hdr->ether_dhost, srcAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+memcpy(eth_hdr->ether_shost, destAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+
+print_hdrs(packet, len);
+sr_send_packet(sr, packet, len, interface);
+}
+
 void sr_handlepacket(struct sr_instance *sr,
                      uint8_t *packet /* lent */,
                      unsigned int len,
@@ -347,42 +378,45 @@ void sr_handle_ip_packet(struct sr_instance *sr,
   }
 
   switch_route(sr, packet, len, srcAddr, destAddr, interface, eth_hdr, ipHdr, lpmEntry);
+
+  uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
+  
+    struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipHdr->ip_dst);
+  
+    if (myInterface)
+    {
+      printf("***** -> IP packet is for one of my interfaces.\n");
+  
+      if (ipProtocol == ip_protocol_icmp)
+      {
+        printf("****** -> It is an ICMP packet. Print ICMP header.\n");
+  
+  
+        sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+  
+        if (icmpHdr->icmp_type == 8)
+        {
+          printf("******** -> It is an ICMP echo request. Send ICMP echo reply.\n");
+          icmp_direct_echo_reply(sr, packet, len, srcAddr, destAddr, interface, eth_hdr, ipHdr, icmpHdr);
+          printf("********* -> ICMP echo request processing complete.\n");
+        }
+      }
+      else
+      {
+        printf("****** -> IP packet is not an ICMP packet. Send ICMP port unreachable.\n");
+        sr_send_icmp_error_packet(3, 3, sr, ipHdr->ip_src, (uint8_t *)ipHdr);
+      }
+  
+      printf("********* -> IP packet processing complete.\n");
+    }
+
 }
 
 
 /* Return an icmp echo reply message where the packet
    is the icmp echo request.
  */
-void icmp_direct_echo_reply(struct sr_instance *sr,
-                            uint8_t *packet /* lent */,
-                            unsigned int len,
-                            uint8_t *srcAddr,
-                            uint8_t *destAddr,
-                            char *interface /* lent */,
-                            sr_ethernet_hdr_t *eth_hdr,
-                            sr_ip_hdr_t *ipHdr,
-                            sr_icmp_hdr_t *icmpHdr)
-{
 
-  int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
-
-  /* We don't have to look up the routing table for this one */
-  struct sr_if *myInterface = sr_get_interface(sr, interface);
-
-  icmpHdr->icmp_type = 0;
-  icmpHdr->icmp_code = 0;
-  icmpHdr->icmp_sum = icmp_cksum(icmpHdr, len - icmpOffset);
-
-  ipHdr->ip_dst = ipHdr->ip_src;
-  ipHdr->ip_src = myInterface->ip;
-  ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
-
-  memcpy(eth_hdr->ether_dhost, srcAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
-  memcpy(eth_hdr->ether_shost, destAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
-
-  print_hdrs(packet, len);
-  sr_send_packet(sr, packet, len, interface);
-}
 
 /* Normal Mode IP */
 void switch_route(struct sr_instance *sr,
