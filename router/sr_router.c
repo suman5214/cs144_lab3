@@ -320,7 +320,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
   struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipHdr->ip_dst);
   struct sr_rt *lpmEntry = sr_get_lpm_entry(sr->routing_table, ipHdr->ip_dst);
 
-  if (myInterface == NULL && lpmEntry == NULL)
+  if (!myInterface)
   {
     printf("*** -> Packet is not for one of my interfaces and no match found in routing table. Send ICMP net unreachable.\n");
     sr_send_icmp_error_packet(3, 0, sr, ipHdr->ip_src, ipHdr);
