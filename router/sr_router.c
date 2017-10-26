@@ -267,6 +267,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
       printf("***** -> ARP request is for one of my interfaces.\n");
 
       printf("****** -> Construct an ARP reply and send it back.\n");
+
       memcpy(eth_hdr->ether_shost, myInterface->addr,  ETHER_ADDR_LEN); 
       memcpy(eth_hdr->ether_dhost, senderHardAddr, ETHER_ADDR_LEN);
 
@@ -275,7 +276,6 @@ void sr_handle_arp_packet(struct sr_instance *sr,
       apr_hdr->ar_sip = targetIP;
       apr_hdr->ar_tip = senderIP; 
       apr_hdr->ar_op = htons(arp_op_reply);
-      print_hdrs(packet, len);
       sr_send_packet(sr, packet, len, myInterface->name);
     }
     printf("******* -> ARP request processing complete.\n");
