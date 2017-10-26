@@ -450,7 +450,7 @@ void switch_route(struct sr_instance *sr,
       ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t)); /* recompute checksum */
 
       uint32_t nextHopIP = (uint32_t)lpmEntry->gw.s_addr;
-      struct sr_arpentry *arpEntry = sr_arpcache_lookup(&sr->cache, nextHopIP);
+      struct sr_arpentry *arpEntry = sr_arpcache_lookup(&sr->cache, lpmEntry->gw.s_addr);
 
       if (arpEntry)
       {
@@ -468,7 +468,7 @@ void switch_route(struct sr_instance *sr,
       {
         printf("******** -> No next-hop-IP to MAC mapping found in ARP cache. Send ARP request to find it.\n");
 
-        struct sr_arpreq *nextHopIPArpReq = sr_arpcache_queuereq(&(sr->cache), nextHopIP, packet, len, &(lpmEntry->interface));
+        struct sr_arpreq *nextHopIPArpReq = sr_arpcache_queuereq(&(sr->cache), lpmEntry->gw.s_addr, packet, len, &(lpmEntry->interface));
         handle_arpreq(sr, nextHopIPArpReq);
       }
     }
