@@ -284,13 +284,22 @@ void sr_handle_arp_packet(struct sr_instance *sr,
     printf("***** -> Add MAC->IP mapping of sender to my ARP cache.\n");
 
     struct sr_arpreq *arpReq = sr_arpcache_insert(&(sr->cache), senderHardAddr, senderIP);
-    if (arpReq != NULL) {
+    if (!arpReq ) {
         printf("****** -> Send outstanding packets.\n");
-        sr_arp_reply_send_pending_packets(sr,
-                                    arpReq,
-                                    (uint8_t *) myInterface->addr,
-                                    (uint8_t *) senderHardAddr,
-                                    myInterface);   
+        struct sr_packet *packet = arpReq->packets;
+        while (packet)
+          {
+            struct sr_if packet_intf = sr_get_interface(sr, packet->iface);
+            if (packet_intf)
+                            {
+                              sr_ethernet_hdr_t eth_hdr = (sr_ethernet_hdr_t *)(packet->buf);
+                                memcpy(eth_hdr->ether_dhost, arp_hdr->ar_sha, ETHER_ADDR_LEN);
+                                memcpy(eth_hdr->ether_shost, packet_intf->addr, ETHER_ADDR_LEN);
+                                sr_send_packet(sr, packet->buf, packet->len, packet->iface);
+                            }
+        
+                            packet = packet->next;
+                        }  
         sr_arpreq_destroy(&(sr->cache), arpReq);
     } 
     printf("******* -> ARP reply processing complete.\n");
