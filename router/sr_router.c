@@ -98,32 +98,6 @@ void sr_handlepacket(struct sr_instance* sr,
   }
 }/* end sr_ForwardPacket */
 
-/* Send all outstanding packets for the given ARP request entry.
-   Helper function for ARP reply processing code. */ 
-void sr_arp_reply_send_pending_packets(struct sr_instance *sr,
-                                        struct sr_arpreq *arpReq,
-                                        uint8_t *dhost,
-                                        uint8_t *shost,
-                                        struct sr_if *iface) {
-
-  struct sr_packet *currPacket = arpReq->packets;
-  sr_ethernet_hdr_t *ethHdr;
-  uint8_t *copyPacket;
-
-  while (currPacket != NULL) {
-     ethHdr = (sr_ethernet_hdr_t *) currPacket->buf;
-     memcpy(ethHdr->ether_shost, dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-     memcpy(ethHdr->ether_dhost, shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-
-     copyPacket = malloc(sizeof(uint8_t) * currPacket->len);
-     memcpy(copyPacket, ethHdr, sizeof(uint8_t) * currPacket->len);
-   
-     print_hdrs(copyPacket, currPacket->len); 
-     sr_send_packet(sr, copyPacket, currPacket->len, iface);
-     currPacket = currPacket->next;
-  }
-}
-
 /* Send an ARP request. */
 void sr_arp_request_send(struct sr_instance *sr, uint32_t ip) {
     printf("$$$ -> Send ARP request.\n");
@@ -286,20 +260,26 @@ void sr_handle_arp_packet(struct sr_instance *sr,
     struct sr_arpreq *arpReq = sr_arpcache_insert(&(sr->cache), senderHardAddr, senderIP);
     if (!arpReq ) {
         printf("****** -> Send outstanding packets.\n");
-        struct sr_packet *packet = arpReq->packets;
-        while (packet)
-          {
-            struct sr_if packet_intf = sr_get_interface(sr, packet->iface);
-            if (packet_intf)
-                            {
-                              sr_ethernet_hdr_t eth_hdr = (sr_ethernet_hdr_t *)(packet->buf);
-                                memcpy(eth_hdr->ether_dhost, arp_hdr->ar_sha, ETHER_ADDR_LEN);
-                                memcpy(eth_hdr->ether_shost, packet_intf->addr, ETHER_ADDR_LEN);
-                                sr_send_packet(sr, packet->buf, packet->len, packet->iface);
-                            }
+        sr_arp_reply_send_pending_packets(sr,
+                                    arpReq,
+                                    (uint8_t *) myInterface->addr,
+                                    (uint8_t *) senderHardAddr,
+                                    myInterface);
         
-                            packet = packet->next;
-                        }  
+        struct sr_packet *currPacket = arpReq->packets;
+        sr_ethernet_hdr_t *ethHdr;
+        uint8_t *copyPacket;
+                                  
+        while (currPacket != NULL) {
+          ethHdr = (sr_ethernet_hdr_t *) currPacket->buf;
+          memcpy(ethHdr->ether_shost, dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+          memcpy(ethHdr->ether_dhost, shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+                                  
+          copyPacket = malloc(sizeof(uint8_t) * currPacket->len);
+          memcpy(copyPacket, ethHdr, sizeof(uint8_t) * currPacket->len);            
+          sr_send_packet(sr, copyPacket, currPacket->len, iface);
+          currPacket = currPacket->next;
+          }                              
         sr_arpreq_destroy(&(sr->cache), arpReq);
     } 
     printf("******* -> ARP reply processing complete.\n");
