@@ -98,10 +98,10 @@ void sr_handlepacket(struct sr_instance* sr,
       print_hdr_arp(packet+ethernet_len);
       sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (packet + ethernet_len);
     
-      if (arp_hdr->ar_op == arp_op_request){
+      if (ntohs(arp_hdr->ar_op) == arp_op_request){
         printf("****ARP REQUEST!!!!!!");
       }
-      else if (arp_hdr->ar_op == arp_op_reply){
+      else if (ntohs(arp_hdr->ar_op) == arp_op_reply){
         printf("****ARP Reply!!!!!!");
       }
 
