@@ -119,8 +119,8 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip)
   int arpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
   uint8_t *arpPacket = malloc(arpPacketLen);
 
-  sr_ethernet_hdr_t *ethHdr = (struct sr_ethernet_hdr *)arpPacket;
-  memcpy(ethHdr->ether_dhost, generate_ethernet_addr(255), ETHER_ADDR_LEN);
+  sr_ethernet_hdr_t *eth_hdr = (struct sr_ethernet_hdr *)arpPacket;
+  memcpy(eth_hdr->ether_dhost, generate_ethernet_addr(255), ETHER_ADDR_LEN);
 
   struct sr_if *currIf = sr->if_list;
   uint8_t *copyPacket;
@@ -128,8 +128,8 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip)
   {
     printf("$$$$ -> Send ARP request from interface %s.\n", currIf->name);
 
-    memcpy(ethHdr->ether_shost, (uint8_t *)currIf->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
-    ethHdr->ether_type = htons(ethertype_arp);
+    memcpy(eth_hdr->ether_shost, (uint8_t *)currIf->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+    eth_hdr->ether_type = htons(ethertype_arp);
 
     sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(arpPacket + sizeof(sr_ethernet_hdr_t));
     apr_hdr->ar_hrd = htons(1);
@@ -143,7 +143,7 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip)
     apr_hdr->ar_tip = ip;
 
     copyPacket = malloc(arpPacketLen);
-    memcpy(copyPacket, ethHdr, arpPacketLen);
+    memcpy(copyPacket, eth_hdr, arpPacketLen);
     print_hdrs(copyPacket, arpPacketLen);
     sr_send_packet(sr, copyPacket, arpPacketLen, currIf->name);
 
@@ -166,12 +166,12 @@ void sr_send_icmp_error_packet(uint8_t type,
   uint8_t *packet = malloc(icmpPacketLen);
 
   /* packet headers */
-  sr_ethernet_hdr_t *ethHdr = (sr_ethernet_hdr_t *)packet;
+  sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
   sr_ip_hdr_t *ipHdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
   sr_icmp_t3_hdr_t *icmp3Hdr = (sr_icmp_t3_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
   /* initialize ethernet header */
-  ethHdr->ether_type = htons(ethertype_ip);
+  eth_hdr->ether_type = htons(ethertype_ip);
 
   /* initialize IP header */
   ipHdr->ip_hl = 5;
@@ -203,13 +203,13 @@ void sr_send_icmp_error_packet(uint8_t type,
     ipHdr->ip_src = interface->ip;
     ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
-    memcpy(ethHdr->ether_shost, (uint8_t *)interface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+    memcpy(eth_hdr->ether_shost, (uint8_t *)interface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
     struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), nextHopIP);
     if (arpEntry != NULL)
     {
       printf("##### -> Next-hop-IP to MAC mapping found in ARP cache. Forward packet to next hop.\n");
 
-      memcpy(ethHdr->ether_dhost, (uint8_t *)arpEntry->mac, sizeof(uint8_t) * ETHER_ADDR_LEN);
+      memcpy(eth_hdr->ether_dhost, (uint8_t *)arpEntry->mac, sizeof(uint8_t) * ETHER_ADDR_LEN);
       print_hdrs(packet, icmpPacketLen);
       sr_send_packet(sr, packet, icmpPacketLen, interface->name);
     }
@@ -286,18 +286,18 @@ void sr_handle_arp_packet(struct sr_instance *sr,
     {
       printf("****** -> Send outstanding packets.\n");
 
-      struct sr_packet *currPacket = arpReq->packets;
-      sr_ethernet_hdr_t *ethHdr;
+      struct sr_packet *unsent_packet = arpReq->packets;
+      sr_ethernet_hdr_t *eth_hdr;
 
-      while (currPacket != NULL)
+      while (unsent_packet != NULL)
       {
-        ethHdr = (sr_ethernet_hdr_t *)currPacket->buf;
-        memcpy(ethHdr->ether_shost, myInterface->addr, ETHER_ADDR_LEN);
-        memcpy(ethHdr->ether_dhost, senderHardAddr, ETHER_ADDR_LEN);
+        eth_hdr = (sr_ethernet_hdr_t *)unsent_packet->buf;
+        memcpy(eth_hdr->ether_shost, myInterface->addr, ETHER_ADDR_LEN);
+        memcpy(eth_hdr->ether_dhost, senderHardAddr, ETHER_ADDR_LEN);
 
 
-        sr_send_packet(sr, currPacket->buf, currPacket->len, myInterface);
-        currPacket = currPacket->next;
+        sr_send_packet(sr, unsent_packet->buf, unsent_packet->len, myInterface);
+        unsent_packet = unsent_packet->next;
       }
       sr_arpreq_destroy(&(sr->cache), arpReq);
     }
