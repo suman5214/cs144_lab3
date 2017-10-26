@@ -97,7 +97,7 @@ void sr_handlepacket(struct sr_instance* sr,
       }
       print_hdr_arp(packet+ethernet_len);
       sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (packet + ethernet_len);
-      stuct sr_if check_for_me = sr_get_interface_ip(sr, arp_hdr->ar_tip);
+      struct sr_if *check_for_me = sr_get_interface_ip(sr, arp_hdr->ar_tip);
 
       if ( check_for_me == 0){
           printf("IP not on network");
