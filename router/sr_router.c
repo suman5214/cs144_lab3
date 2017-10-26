@@ -101,14 +101,28 @@ void sr_handlepacket(struct sr_instance* sr,
       if (ntohs(arp_hdr->ar_op) == arp_op_request){
         printf("****ARP REQUEST!!!!!!\n");
 
-        if (sr_get_interface_given_ip(sr, arp_hdr->ar_tip) == 0){
+        if (sr_get_interface_ip(sr, arp_hdr->ar_tip) == 0){
           printf("IP not on network");
         }
+        uint8_t *arpres = malloc(len);
+        memcpy(arpres, packet, len);
 
-        if(sr_arpcache_entry_update(&(sr->cache), arp_hdr->ar_sip)){
-          sr_arpcache_insert(&(sr->cache), arp_hdr->ar_sha, arp_hdr->ar_sip);
-          printf("Add MAC->IP mapping of sender to my ARP cache.\n");
-        }
+            /* Update ethernet header */
+        sr_ethernet_hdr_t *arpres_eth_hdr = (sr_ethernet_hdr_t *)arpres;
+            /* Reply dest MAC address is request source MAC address */
+        memcpy(arpres_eth_hdr->ether_dhost, arpres_eth_hdr->ether_shost, ETHER_ADDR_LEN);
+        memcpy(arpres_eth_hdr->ether_shost, intf->addr, ETHER_ADDR_LEN);
+
+            /* Update ARP header */
+        sr_arp_hdr_t *arpres_arp_hdr = (sr_arp_hdr_t *)(arpres + sizeof(sr_ethernet_hdr_t));
+        arpres_arp_hdr->ar_op = htons(arp_op_reply);                     /* Reply operation */
+        memcpy(arpres_arp_hdr->ar_sha, intf->addr, ETHER_ADDR_LEN);      /* Source MAC address */
+        arpres_arp_hdr->ar_sip = intf->ip;                               /* Source IP address */
+        memcpy(arpres_arp_hdr->ar_tha, arp_hdr->ar_sha, ETHER_ADDR_LEN); /* Target MAC address */
+        arpres_arp_hdr->ar_tip = arp_hdr->ar_sip;                        /* Target IP address */
+
+        send_packet(sr, arpres, len, intf, arp_hdr->ar_sip);
+        free(arpres);
       }
 
       else if (ntohs(arp_hdr->ar_op) == arp_op_reply){
@@ -126,3 +140,21 @@ void sr_handlepacket(struct sr_instance* sr,
 
 }/* end sr_ForwardPacket */
 
+struct sr_if *sr_get_interface_ip(struct sr_instance *sr, uint32_t ip)
+{
+    assert(ip);
+    assert(sr);
+
+    struct sr_if *intf = sr->if_list;
+    while (intf)
+    {
+        if (intf->ip == ip)
+        {
+            return intf;
+        }
+
+        intf = intf->next;
+    }
+
+    return 0;
+}
