@@ -235,14 +235,13 @@ void sr_send_icmp_error_packet(uint8_t type,
   {
     printf("#### -> Match found in routing table. Check ARP cache.\n");
 
-    uint32_t nextHopIP = (uint32_t)longest_matching_entry->gw.s_addr;
     struct sr_if *interface = sr_get_interface(sr, longest_matching_entry->interface);
 
     ipHdr->ip_src = interface->ip;
     ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
     memcpy(eth_hdr->ether_shost, (uint8_t *)interface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
-    struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), nextHopIP);
+    struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), longest_matching_entry->gw.s_addr);
     if (arpEntry != NULL)
     {
       printf("##### -> Next-hop-IP to MAC mapping found in ARP cache. Forward packet to next hop.\n");
@@ -255,7 +254,7 @@ void sr_send_icmp_error_packet(uint8_t type,
     {
       printf("##### -> No next-hop-IP to MAC mapping found in ARP cache. Send ARP request to find it.\n");
       struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),
-                                                      nextHopIP,
+                                                      longest_matching_entry->gw.s_addr,
                                                       packet,
                                                       icmpPacketLen,
                                                       &(interface->name));
