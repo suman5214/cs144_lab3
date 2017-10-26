@@ -91,7 +91,7 @@ void sr_handlepacket(struct sr_instance* sr,
 
   if (is_packet_valid(packet, len)) {
     if (pktType == ethertype_arp) {
-      sr_handle_arp_packet(sr, packet, len, interface, eth_hdr);
+      sr_handle_arp_packet(sr, packet, len, interface);
     } else if (pktType == ethertype_ip) {
       sr_handle_ip_packet(sr, packet, len, srcAddr, destAddr, interface, eth_hdr);
     }
@@ -237,12 +237,12 @@ void sr_send_icmp_error_packet(uint8_t type,
 void sr_handle_arp_packet(struct sr_instance *sr,
         uint8_t *packet /* lent */,
         unsigned int len,
-        char *interface /* lent */,   
-        sr_ethernet_hdr_t *eth_hdr) {
+        char *interface) {
 
   printf("*** -> It is an ARP packet. Print ARP header.\n");
   print_hdr_arp(packet + sizeof(sr_ethernet_hdr_t));
-
+  
+  sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *) packet;
   sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
 
   unsigned char senderHardAddr[ETHER_ADDR_LEN], targetHardAddr[ETHER_ADDR_LEN];
