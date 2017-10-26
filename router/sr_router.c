@@ -380,36 +380,8 @@ void sr_handle_ip_packet(struct sr_instance *sr,
   switch_route(sr, packet, len, srcAddr, destAddr, interface, eth_hdr, ipHdr, lpmEntry);
 
   uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
+  struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipHdr->ip_dst);
   
-    struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipHdr->ip_dst);
-  
-    if (myInterface)
-    {
-      printf("***** -> IP packet is for one of my interfaces.\n");
-  
-      if (ipProtocol == ip_protocol_icmp)
-      {
-        printf("****** -> It is an ICMP packet. Print ICMP header.\n");
-  
-  
-        sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-  
-        if (icmpHdr->icmp_type == 8)
-        {
-          printf("******** -> It is an ICMP echo request. Send ICMP echo reply.\n");
-          icmp_direct_echo_reply(sr, packet, len, srcAddr, destAddr, interface, eth_hdr, ipHdr, icmpHdr);
-          printf("********* -> ICMP echo request processing complete.\n");
-        }
-      }
-      else
-      {
-        printf("****** -> IP packet is not an ICMP packet. Send ICMP port unreachable.\n");
-        sr_send_icmp_error_packet(3, 3, sr, ipHdr->ip_src, (uint8_t *)ipHdr);
-      }
-  
-      printf("********* -> IP packet processing complete.\n");
-    }
-
 }
 
 
