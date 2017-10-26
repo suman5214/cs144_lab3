@@ -143,7 +143,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
   int update_flag = sr_arpcache_lookup(&(sr->cache), senderIP); 
 
   /* check if the ARP packet is for one of my interfaces. */
-  struct sr_if *myInterface = sr_get_interface_given_ip(sr, targetIP); 
+  struct sr_if *myInterface = sr_get_interface_ip(sr, targetIP); 
 
   if (op == arp_op_request) {
     printf("**** -> It is an ARP request.\n");
@@ -201,5 +201,4 @@ void sr_handle_arp_packet(struct sr_instance *sr,
     printf("******* -> ARP reply processing complete.\n");
   }
 }
-
 
