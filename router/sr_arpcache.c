@@ -35,7 +35,8 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
                 /* Send ICMP message back to sender */
                 if (sr_get_interface_addr(sr, (unsigned char *)packet_ehdr->ether_dhost))
                 {
-                    send_icmp_msg(sr, packet->buf, packet->len, icmp_type_dest_unreachable, icmp_dest_unreachable_host);
+                    /* send_icmp_msg(sr, packet->buf, packet->len, icmp_type_dest_unreachable, icmp_dest_unreachable_host); */
+                    printf('sending icmp\n');
                 }
 
                 packet = packet->next;
