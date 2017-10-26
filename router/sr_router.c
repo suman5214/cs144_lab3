@@ -82,18 +82,18 @@ void sr_handlepacket(struct sr_instance* sr,
   printf("** -> Received packet of length \n");
   print_hdr_eth(packet);
 
-  sr_ethernet_hdr_t *eHdr = (sr_ethernet_hdr_t *) packet;
+  sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *) packet;
   uint8_t *destAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
   uint8_t *srcAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-  memcpy(destAddr, eHdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-  memcpy(srcAddr, eHdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-  uint16_t pktType = ntohs(eHdr->ether_type);
+  memcpy(destAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+  memcpy(srcAddr, eth_hdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+  uint16_t pktType = ntohs(eth_hdr->ether_type);
 
   if (is_packet_valid(packet, len)) {
     if (pktType == ethertype_arp) {
-      sr_handle_arp_packet(sr, packet, len, srcAddr, destAddr, interface, eHdr);
+      sr_handle_arp_packet(sr, packet, len, srcAddr, destAddr, interface, eth_hdr);
     } else if (pktType == ethertype_ip) {
-      sr_handle_ip_packet(sr, packet, len, srcAddr, destAddr, interface, eHdr);
+      sr_handle_ip_packet(sr, packet, len, srcAddr, destAddr, interface, eth_hdr);
     }
   }
 }/* end sr_ForwardPacket */
@@ -142,16 +142,16 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip) {
         memcpy(ethHdr->ether_shost, (uint8_t *) currIf->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
         ethHdr->ether_type = htons(ethertype_arp);
 
-        sr_arp_hdr_t *arpHdr = (sr_arp_hdr_t *) (arpPacket + sizeof(sr_ethernet_hdr_t));
-        arpHdr->ar_hrd = htons(1);
-        arpHdr->ar_pro = htons(2048);
-        arpHdr->ar_hln = 6;
-        arpHdr->ar_pln = 4;
-        arpHdr->ar_op = htons(arp_op_request);
-        memcpy(arpHdr->ar_sha, currIf->addr, ETHER_ADDR_LEN);
-        memcpy(arpHdr->ar_tha, (char *) generate_ethernet_addr(0), ETHER_ADDR_LEN);
-        arpHdr->ar_sip = currIf->ip;
-        arpHdr->ar_tip = ip; 
+        sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *) (arpPacket + sizeof(sr_ethernet_hdr_t));
+        apr_hdr->ar_hrd = htons(1);
+        apr_hdr->ar_pro = htons(2048);
+        apr_hdr->ar_hln = 6;
+        apr_hdr->ar_pln = 4;
+        apr_hdr->ar_op = htons(arp_op_request);
+        memcpy(apr_hdr->ar_sha, currIf->addr, ETHER_ADDR_LEN);
+        memcpy(apr_hdr->ar_tha, (char *) generate_ethernet_addr(0), ETHER_ADDR_LEN);
+        apr_hdr->ar_sip = currIf->ip;
+        apr_hdr->ar_tip = ip; 
 
         copyPacket = malloc(arpPacketLen);
         memcpy(copyPacket, ethHdr, arpPacketLen);
@@ -240,20 +240,20 @@ void sr_handle_arp_packet(struct sr_instance *sr,
         uint8_t *srcAddr,
         uint8_t *destAddr,
         char *interface /* lent */,   
-        sr_ethernet_hdr_t *eHdr) {
+        sr_ethernet_hdr_t *eth_hdr) {
 
   printf("*** -> It is an ARP packet. Print ARP header.\n");
   print_hdr_arp(packet + sizeof(sr_ethernet_hdr_t));
 
-  sr_arp_hdr_t *arpHdr = (sr_arp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
+  sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
 
   unsigned char senderHardAddr[ETHER_ADDR_LEN], targetHardAddr[ETHER_ADDR_LEN];
-  memcpy(senderHardAddr, arpHdr->ar_sha, ETHER_ADDR_LEN);
-  memcpy(targetHardAddr, arpHdr->ar_tha, ETHER_ADDR_LEN);
+  memcpy(senderHardAddr, apr_hdr->ar_sha, ETHER_ADDR_LEN);
+  memcpy(targetHardAddr, apr_hdr->ar_tha, ETHER_ADDR_LEN);
 
-  uint32_t senderIP = arpHdr->ar_sip;
-  uint32_t targetIP = arpHdr->ar_tip;
-  unsigned short op = ntohs(arpHdr->ar_op);
+  uint32_t senderIP = apr_hdr->ar_sip;
+  uint32_t targetIP = apr_hdr->ar_tip;
+  unsigned short op = ntohs(apr_hdr->ar_op);
 
   /* "refresh" the ARP cache entry associated with sender IP address
      if such an entry already exists. */
@@ -277,14 +277,14 @@ void sr_handle_arp_packet(struct sr_instance *sr,
       }
 
       printf("****** -> Construct an ARP reply and send it back.\n");
-      memcpy(eHdr->ether_shost, (uint8_t *) myInterface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN); 
-      memcpy(eHdr->ether_dhost, (uint8_t *) senderHardAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+      memcpy(eth_hdr->ether_shost, (uint8_t *) myInterface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN); 
+      memcpy(eth_hdr->ether_dhost, (uint8_t *) senderHardAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
 
-      memcpy(arpHdr->ar_sha, myInterface->addr, ETHER_ADDR_LEN);
-      memcpy(arpHdr->ar_tha, senderHardAddr, ETHER_ADDR_LEN);
-      arpHdr->ar_sip = targetIP;
-      arpHdr->ar_tip = senderIP; 
-      arpHdr->ar_op = htons(arp_op_reply);
+      memcpy(apr_hdr->ar_sha, myInterface->addr, ETHER_ADDR_LEN);
+      memcpy(apr_hdr->ar_tha, senderHardAddr, ETHER_ADDR_LEN);
+      apr_hdr->ar_sip = targetIP;
+      apr_hdr->ar_tip = senderIP; 
+      apr_hdr->ar_op = htons(arp_op_reply);
       print_hdrs(packet, len);
       sr_send_packet(sr, packet, len, myInterface->name);
     }
@@ -315,7 +315,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
         uint8_t *srcAddr,
         uint8_t *destAddr,
         char *interface /* lent */,   
-        sr_ethernet_hdr_t *eHdr) {
+        sr_ethernet_hdr_t *eth_hdr) {
 
   printf("*** -> It is an IP packet. Print IP header.\n");
   print_hdr_ip(packet + sizeof(sr_ethernet_hdr_t));
@@ -333,7 +333,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
     printf("*** -> Packet is not for one of my interfaces and no match found in routing table. Send ICMP net unreachable.\n");
     sr_send_icmp_error_packet(3, 0, sr, ipSrc, (uint8_t*)ipHdr);
   } else {
-    switch_route(sr, packet, len, srcAddr, destAddr, interface, eHdr, ipHdr, lpmEntry);
+    switch_route(sr, packet, len, srcAddr, destAddr, interface, eth_hdr, ipHdr, lpmEntry);
   }
 }
 
@@ -354,7 +354,7 @@ void icmp_direct_echo_reply(struct sr_instance *sr,
         uint8_t *srcAddr,
         uint8_t *destAddr,
         char *interface /* lent */,
-        sr_ethernet_hdr_t *eHdr,
+        sr_ethernet_hdr_t *eth_hdr,
         sr_ip_hdr_t *ipHdr,
         sr_icmp_hdr_t *icmpHdr) {
 
@@ -371,8 +371,8 @@ void icmp_direct_echo_reply(struct sr_instance *sr,
   ipHdr->ip_src = myInterface->ip;
   ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
-  memcpy(eHdr->ether_dhost, srcAddr, sizeof(uint8_t) * ETHER_ADDR_LEN); 
-  memcpy(eHdr->ether_shost, destAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+  memcpy(eth_hdr->ether_dhost, srcAddr, sizeof(uint8_t) * ETHER_ADDR_LEN); 
+  memcpy(eth_hdr->ether_shost, destAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
 
   print_hdrs(packet, len);
   sr_send_packet(sr, packet, len, interface);
@@ -385,7 +385,7 @@ void switch_route(struct sr_instance *sr,
         uint8_t *srcAddr,
         uint8_t *destAddr,
         char *interface /* lent */,
-        sr_ethernet_hdr_t *eHdr,
+        sr_ethernet_hdr_t *eth_hdr,
         sr_ip_hdr_t *ipHdr,
         struct sr_rt *lpmEntry) {
 
@@ -413,8 +413,8 @@ void switch_route(struct sr_instance *sr,
 
         struct sr_if *outInterface = sr_get_interface(sr, (const char *) (lpmEntry->interface));
 
-        memcpy(eHdr->ether_dhost, arpEntry->mac, sizeof(uint8_t) * ETHER_ADDR_LEN);
-        memcpy(eHdr->ether_shost, (uint8_t *) outInterface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+        memcpy(eth_hdr->ether_dhost, arpEntry->mac, sizeof(uint8_t) * ETHER_ADDR_LEN);
+        memcpy(eth_hdr->ether_shost, (uint8_t *) outInterface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
 
         print_hdrs(packet, len);
         sr_send_packet(sr, packet, len, outInterface); 
@@ -438,7 +438,7 @@ void switch_route(struct sr_instance *sr,
 
       if (is_icmp_echo_request(icmpHdr)) {
         printf("******** -> It is an ICMP echo request. Send ICMP echo reply.\n");
-        icmp_direct_echo_reply(sr, packet, len, srcAddr, destAddr, interface, eHdr, ipHdr, icmpHdr);
+        icmp_direct_echo_reply(sr, packet, len, srcAddr, destAddr, interface, eth_hdr, ipHdr, icmpHdr);
         printf("********* -> ICMP echo request processing complete.\n");
       }
     } else {
