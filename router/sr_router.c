@@ -489,3 +489,19 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip) {
     }
     printf("$$$ -> Send ARP request processing complete.\n");
 }
+
+struct sr_rt *sr_get_lpm_entry(struct sr_rt *rt, uint32_t ip) {
+  unsigned long int longestMatch = 0;
+  struct sr_rt *rtMatch = NULL;
+
+  while (rt != NULL) {
+     if (((unsigned long int) rt->mask.s_addr & (unsigned long int) ip) == (unsigned long int) rt->dest.s_addr) {
+        if ((rt->mask.s_addr) > longestMatch) {
+           longestMatch = rt->mask.s_addr;
+           rtMatch = rt;
+        }
+     }
+     rt = rt->next;
+  }
+  return rtMatch;
+}
