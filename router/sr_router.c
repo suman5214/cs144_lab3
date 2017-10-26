@@ -314,21 +314,20 @@ void sr_handle_ip_packet(struct sr_instance *sr,
 {
 
   printf("*** -> It is an IP packet. Print IP header.\n");
-  print_hdr_ip(packet + sizeof(sr_ethernet_hdr_t));
 
   struct sr_ip_hdr *ipHdr = (struct sr_ip_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
 
   uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
   uint32_t ipDst = ipHdr->ip_dst;
-  uint32_t ipSrc = ipHdr->ip_src;
+  uint32_t ipSrc = ;
 
-  struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipDst);
-  struct sr_rt *lpmEntry = sr_get_lpm_entry(sr->routing_table, ipDst);
+  struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipHdr->ip_dst);
+  struct sr_rt *lpmEntry = sr_get_lpm_entry(sr->routing_table, ipHdr->ip_dst);
 
   if (myInterface == NULL && lpmEntry == NULL)
   {
     printf("*** -> Packet is not for one of my interfaces and no match found in routing table. Send ICMP net unreachable.\n");
-    sr_send_icmp_error_packet(3, 0, sr, ipSrc, (uint8_t *)ipHdr);
+    sr_send_icmp_error_packet(3, 0, sr, ipHdr->ip_src, ipHdr);
   }
   else
   {
