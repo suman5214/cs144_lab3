@@ -417,10 +417,8 @@ void switch_route(struct sr_instance *sr,
     {
       printf("****** -> It is an ICMP packet. Print ICMP header.\n");
 
-      int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
-      print_hdr_icmp(packet + icmpOffset);
 
-      sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(packet + icmpOffset);
+      sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
       if (is_icmp_echo_request(icmpHdr))
       {
