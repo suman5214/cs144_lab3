@@ -241,7 +241,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
 
   printf("*** -> It is an ARP packet. Print ARP header.\n");
   print_hdr_arp(packet + sizeof(sr_ethernet_hdr_t));
-  
+
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *) packet;
   sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
 
@@ -265,14 +265,6 @@ void sr_handle_arp_packet(struct sr_instance *sr,
 
     if (myInterface != 0) {
       printf("***** -> ARP request is for one of my interfaces.\n");
-
-      if (update_flag == 0) {
-        printf("****** -> Add MAC->IP mapping of sender to my ARP cache.\n");
-
-        /* Note: will take care of the entry in the ARP request queue in
-                 the ARP reply processing code. */
-        sr_arpcache_insert(&(sr->cache), senderHardAddr, senderIP);
-      }
 
       printf("****** -> Construct an ARP reply and send it back.\n");
       memcpy(eth_hdr->ether_shost, (uint8_t *) myInterface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN); 
