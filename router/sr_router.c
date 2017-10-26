@@ -65,6 +65,24 @@ void sr_init(struct sr_instance* sr)
  * the method call.
  *
  *---------------------------------------------------------------------*/
+struct sr_if *sr_get_interface_ip(struct sr_instance *sr, uint32_t ip)
+{
+    assert(ip);
+    assert(sr);
+
+    struct sr_if *intf = sr->if_list;
+    while (intf)
+    {
+        if (intf->ip == ip)
+        {
+            return intf;
+        }
+
+        intf = intf->next;
+    }
+
+    return 0;
+}
 
 void sr_handlepacket(struct sr_instance* sr,
         uint8_t * packet/* lent */,
@@ -97,12 +115,13 @@ void sr_handlepacket(struct sr_instance* sr,
       }
       print_hdr_arp(packet+ethernet_len);
       sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (packet + ethernet_len);
-      struct sr_if *check_for_me = sr_get_interface_ip(sr, arp_hdr->ar_tip);
-
-      if ( check_for_me == 0){
-          printf("IP not on network");
-          return;
-      }
+      
+      struct sr_if *dest = sr_get_interface_ip(sr, arp_hdr->ar_tip);
+      if (!dest)
+      { 
+        Debug("ARP: not destined for router\n");
+        return;
+     }
 
       if (ntohs(arp_hdr->ar_op) == arp_op_request){
         printf("****ARP REQUEST!!!!!!\n");
@@ -146,21 +165,3 @@ void sr_handlepacket(struct sr_instance* sr,
 
 }/* end sr_ForwardPacket */
 
-struct sr_if *sr_get_interface_ip(struct sr_instance *sr, uint32_t ip)
-{
-    assert(ip);
-    assert(sr);
-
-    struct sr_if *intf = sr->if_list;
-    while (intf)
-    {
-        if (intf->ip == ip)
-        {
-            return intf;
-        }
-
-        intf = intf->next;
-    }
-
-    return 0;
-}
