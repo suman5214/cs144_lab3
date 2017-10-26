@@ -324,11 +324,10 @@ void sr_handle_ip_packet(struct sr_instance *sr,
   {
     printf("*** -> Packet is not for one of my interfaces and no match found in routing table. Send ICMP net unreachable.\n");
     sr_send_icmp_error_packet(3, 0, sr, ipHdr->ip_src, ipHdr);
+    return;
   }
-  else
-  {
-    switch_route(sr, packet, len, srcAddr, destAddr, interface, eth_hdr, ipHdr, lpmEntry);
-  }
+
+  switch_route(sr, packet, len, srcAddr, destAddr, interface, eth_hdr, ipHdr, lpmEntry);
 }
 
 int is_icmp_echo_request(sr_icmp_hdr_t *icmpHdr)
@@ -388,10 +387,8 @@ void switch_route(struct sr_instance *sr,
 {
 
   uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
-  uint32_t ipDst = ipHdr->ip_dst;
-  uint32_t ipSrc = ipHdr->ip_src;
 
-  struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipDst);
+  struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipHdr->ip_dst);
 
   if (myInterface == NULL)
   {
@@ -401,7 +398,7 @@ void switch_route(struct sr_instance *sr,
     if (ipHdr->ip_ttl <= 0)
     {
       printf("****** -> TTL field is now 0. Send time exceeded.\n");
-      sr_send_icmp_error_packet(11, 0, sr, ipSrc, (uint8_t *)ipHdr);
+      sr_send_icmp_error_packet(11, 0, sr, ipHdr->ip_src, (uint8_t *)ipHdr);
     }
     else
     {
@@ -454,7 +451,7 @@ void switch_route(struct sr_instance *sr,
     else
     {
       printf("****** -> IP packet is not an ICMP packet. Send ICMP port unreachable.\n");
-      sr_send_icmp_error_packet(3, 3, sr, ipSrc, (uint8_t *)ipHdr);
+      sr_send_icmp_error_packet(3, 3, sr, ipHdr->ip_src, (uint8_t *)ipHdr);
     }
 
     printf("********* -> IP packet processing complete.\n");
