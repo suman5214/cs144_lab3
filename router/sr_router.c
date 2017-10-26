@@ -448,18 +448,16 @@ void switch_route(struct sr_instance *sr,
     else
     {
       ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t)); /* recompute checksum */
+      struct sr_arpentry *arp_request = sr_arpcache_lookup(&sr->cache, lpmEntry->gw.s_addr);
 
-      uint32_t nextHopIP = (uint32_t)lpmEntry->gw.s_addr;
-      struct sr_arpentry *arpEntry = sr_arpcache_lookup(&sr->cache, lpmEntry->gw.s_addr);
-
-      if (arpEntry)
+      if (arp_request)
       {
         printf("******** -> Next-hop-IP to MAC mapping found in ARP cache. Forward packet to next hop.\n");
 
-        struct sr_if *outInterface = sr_get_interface(sr, (const char *)(lpmEntry->interface));
+        struct sr_if *outInterface = sr_get_interface(sr, lpmEntry->interface);
 
-        memcpy(eth_hdr->ether_dhost, arpEntry->mac, sizeof(uint8_t) * ETHER_ADDR_LEN);
-        memcpy(eth_hdr->ether_shost, (uint8_t *)outInterface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+        memcpy(eth_hdr->ether_dhost, arp_request->mac, ETHER_ADDR_LEN);
+        memcpy(eth_hdr->ether_shost, outInterface->addr, ETHER_ADDR_LEN);
 
         print_hdrs(packet, len);
         sr_send_packet(sr, packet, len, outInterface);
