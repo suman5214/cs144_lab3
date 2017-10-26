@@ -67,30 +67,6 @@ int sr_read_from_server(struct sr_instance* );
 /* -- sr_router.c -- */
 void sr_init(struct sr_instance* );
 void sr_handlepacket(struct sr_instance* , uint8_t * , unsigned int , char* );
-void sr_handle_ip_packet(struct sr_instance*, uint8_t *, unsigned int, uint8_t *, uint8_t *, char *, sr_ethernet_hdr_t *);
-void sr_arp_reply_send_pending_packets(struct sr_instance*, struct sr_arpreq*, uint8_t*, uint8_t*, struct sr_if*);
-void sr_arp_request_send(struct sr_instance*, uint32_t);
-void sr_send_icmp_error_packet(uint8_t, uint8_t, struct sr_instance*, uint32_t, uint8_t*);
-int is_icmp_echo_request(sr_icmp_hdr_t *);
-int is_icmp_echo_reply(sr_icmp_hdr_t *icmp_hdr);
-void icmp_direct_echo_reply(struct sr_instance *,
-        uint8_t * /* lent */,
-        unsigned int, uint8_t *,
-        uint8_t *,
-        char * /* lent */,
-        sr_ethernet_hdr_t *,
-        sr_ip_hdr_t *,
-        sr_icmp_hdr_t *);
-
-void switch_route(struct sr_instance *,
-        uint8_t * /* lent */,
-        unsigned int,
-        uint8_t *,
-        uint8_t *,
-        char * /* lent */,
-        sr_ethernet_hdr_t *,
-        sr_ip_hdr_t *,
-        struct sr_rt *);
 
 /* -- sr_if.c -- */
 void sr_add_interface(struct sr_instance* , const char* );
