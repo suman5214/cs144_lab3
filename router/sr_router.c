@@ -235,9 +235,9 @@ void sr_send_icmp_error_packet(uint8_t type,
 }
 
 void sr_handle_arp_packet(struct sr_instance *sr,
-        uint8_t *packet /* lent */,
+        uint8_t *packet ,
         unsigned int len,
-        char *interface {
+        char *interface) {
 
   printf("*** -> It is an ARP packet. Print ARP header.\n");
   print_hdr_arp(packet + sizeof(sr_ethernet_hdr_t));
