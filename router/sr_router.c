@@ -267,8 +267,8 @@ void sr_handle_arp_packet(struct sr_instance *sr,
       printf("***** -> ARP request is for one of my interfaces.\n");
 
       printf("****** -> Construct an ARP reply and send it back.\n");
-      memcpy(eth_hdr->ether_shost, (uint8_t *) myInterface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN); 
-      memcpy(eth_hdr->ether_dhost, (uint8_t *) senderHardAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+      memcpy(eth_hdr->ether_shost, myInterface->addr,  ETHER_ADDR_LEN); 
+      memcpy(eth_hdr->ether_dhost, senderHardAddr, ETHER_ADDR_LEN);
 
       memcpy(apr_hdr->ar_sha, myInterface->addr, ETHER_ADDR_LEN);
       memcpy(apr_hdr->ar_tha, senderHardAddr, ETHER_ADDR_LEN);
