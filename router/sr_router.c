@@ -147,6 +147,27 @@ void sr_handlepacket(struct sr_instance* sr,
         arpres_arp_hdr->ar_tip = arp_hdr->ar_sip;                        /* Target IP address */
 
         send_packet(sr, arpres, len, intf, arp_hdr->ar_sip);
+
+        struct sr_arpentry *cached = sr_arpcache_lookup(&sr->cache, arp_hdr->ar_sip);
+
+          if (cached)
+          {
+              /* Send out packet using cached ARP info */
+              printf("send_packet: Using cached ARP\n");
+
+              sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)arpres;
+              memcpy(eth_hdr->ether_shost, intf->addr, ETHER_ADDR_LEN); /* Source: MAC address from the interface that sent it */
+              memcpy(eth_hdr->ether_dhost, cached->mac, ETHER_ADDR_LEN);     /* Dest: MAC address from ARP cache entry */
+
+              sr_send_packet(sr, packet, len, interface->name);
+              
+          }
+          else
+          {
+              /* Queue ARP request */
+              printf("send_packet: Queue ARP request\n");
+          }
+        free(cached);
         free(arpres);
       }
 
