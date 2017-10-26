@@ -79,7 +79,7 @@ void sr_handlepacket(struct sr_instance* sr,
   assert(packet);
   assert(interface);
 
-  printf("** -> Received packet of length %d. Print ethernet header.\n", len);
+  printf("** -> Received packet of length \n");
   print_hdr_eth(packet);
 
   sr_ethernet_hdr_t *eHdr = (sr_ethernet_hdr_t *) packet;
@@ -91,7 +91,7 @@ void sr_handlepacket(struct sr_instance* sr,
 
   if (is_packet_valid(packet, len)) {
     if (pktType == ethertype_arp) {
-      sr_handle_arp_packet(sr, packet, len, srcAddr, destAddr, interface, eHdr);
+      sr_handle_arp_packet(sr, packet, len,interface);
     } else if (pktType == ethertype_ip) {
       sr_handle_ip_packet(sr, packet, len, srcAddr, destAddr, interface, eHdr);
     }
@@ -246,7 +246,8 @@ void sr_handle_arp_packet(struct sr_instance *sr,
   print_hdr_arp(packet + sizeof(sr_ethernet_hdr_t));
 
   sr_arp_hdr_t *arpHdr = (sr_arp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
-
+  sr_ethernet_hdr_t *eHdr = (sr_ethernet_hdr_t *) packet;
+  
   unsigned char senderHardAddr[ETHER_ADDR_LEN], targetHardAddr[ETHER_ADDR_LEN];
   memcpy(senderHardAddr, arpHdr->ar_sha, ETHER_ADDR_LEN);
   memcpy(targetHardAddr, arpHdr->ar_tha, ETHER_ADDR_LEN);
