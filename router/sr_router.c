@@ -187,7 +187,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
                     {
                         /* Set src/dest MAC addresses */
                         eth_hdr = (sr_ethernet_hdr_t *)(packet->buf);
-                        memcpy(eth_hdr->ether_dhost, arp_hdr->ar_sha, ETHER_ADDR_LEN);
+                        memcpy(eth_hdr->ether_dhost, arpHdr->ar_sha, ETHER_ADDR_LEN);
                         memcpy(eth_hdr->ether_shost, packet_intf->addr, ETHER_ADDR_LEN);
 
                         sr_send_packet(sr, packet->buf, packet->len, packet->iface);
