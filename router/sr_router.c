@@ -81,6 +81,7 @@ void sr_handlepacket(struct sr_instance* sr,
   /* fill in code here */
 
   print_hdr_eth(packet);
+  int ethernet_len = sizeof(sr_ethernet_hdr_t);
 
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *) packet;
   uint8_t *destAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
@@ -91,13 +92,13 @@ void sr_handlepacket(struct sr_instance* sr,
 
   if (ethtype == ethertype_arp) {
       printf("**** -> Validate ARP packet.\n");
-      if (len >= sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t)) {
+      if (len < sizeof(sr_arp_hdr_t) + ethernet_len) {
        printf("***** -> Invalid packet length.\n");
-       return 1;
       }
       printf("***** -> Packet length is correct.\n");
-
+      print_hdr_arp(packet+ethernet_len);
     } else if (ethtype == ethertype_ip) {
+      printf("**** -> Validate IP packet.\n");
       if (len < sizeof(sr_ip_hdr_t))
       {
         printf("***** -> Packet length is not correct.\n");
