@@ -220,7 +220,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
   uint32_t ipDst = ipHdr->ip_dst;
   uint32_t ipSrc = ipHdr->ip_src;
 
-  struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipDst); 
+  struct sr_if *myInterface = sr_get_interface_ip(sr, ipDst); 
   struct sr_rt *lpmEntry = sr_get_lpm_entry(sr->routing_table, ipDst);             
 
   if (myInterface == NULL && lpmEntry == NULL) {
@@ -287,7 +287,7 @@ void switch_route(struct sr_instance *sr,
   uint32_t ipDst = ipHdr->ip_dst;
   uint32_t ipSrc = ipHdr->ip_src;
 
-  struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipDst); 
+  struct sr_if *myInterface = sr_get_interface_ip(sr, ipDst); 
   
   if (myInterface == NULL) {
     printf("***** -> IP packet is not for one of my interfaces.\n");
@@ -421,4 +421,75 @@ uint8_t *generate_ethernet_addr(uint8_t x) {
         mac[i] = x;
     }
     return mac;
+}
+
+uint32_t ip_cksum (sr_ip_hdr_t *ipHdr, int len) {
+    uint16_t currChksum, calcChksum;
+
+    currChksum = ipHdr->ip_sum; 
+    ipHdr->ip_sum = 0;
+    calcChksum = cksum(ipHdr, len);
+    ipHdr->ip_sum = currChksum;    
+
+    return calcChksum;
+}
+
+uint32_t icmp_cksum (sr_icmp_hdr_t *icmpHdr, int len) {
+    uint16_t currChksum, calcChksum;
+
+    currChksum = icmpHdr->icmp_sum; 
+    icmpHdr->icmp_sum = 0;
+    calcChksum = cksum(icmpHdr, len);
+    icmpHdr->icmp_sum = currChksum;
+
+    return calcChksum;
+}
+
+uint32_t icmp3_cksum(sr_icmp_t3_hdr_t *icmp3Hdr, int len) {
+    uint16_t currChksum, calcChksum;
+
+    currChksum = icmp3Hdr->icmp_sum;
+    icmp3Hdr->icmp_sum = 0;
+    calcChksum = cksum(icmp3Hdr, len);
+    icmp3Hdr->icmp_sum = currChksum;
+    
+    return calcChksum;
+}
+
+void sr_arp_request_send(struct sr_instance *sr, uint32_t ip) {
+    printf("$$$ -> Send ARP request.\n");
+
+    int arpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+    uint8_t *arpPacket = malloc(arpPacketLen);
+
+    sr_ethernet_hdr_t *ethHdr = (struct sr_ethernet_hdr *) arpPacket;
+    memcpy(ethHdr->ether_dhost, generate_ethernet_addr(255), ETHER_ADDR_LEN);
+
+    struct sr_if *currIf = sr->if_list;
+    uint8_t *copyPacket;
+    while (currIf != NULL) {
+        printf("$$$$ -> Send ARP request from interface %s.\n", currIf->name);
+
+        memcpy(ethHdr->ether_shost, (uint8_t *) currIf->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+        ethHdr->ether_type = htons(ethertype_arp);
+
+        sr_arp_hdr_t *arpHdr = (sr_arp_hdr_t *) (arpPacket + sizeof(sr_ethernet_hdr_t));
+        arpHdr->ar_hrd = htons(1);
+        arpHdr->ar_pro = htons(2048);
+        arpHdr->ar_hln = 6;
+        arpHdr->ar_pln = 4;
+        arpHdr->ar_op = htons(arp_op_request);
+        memcpy(arpHdr->ar_sha, currIf->addr, ETHER_ADDR_LEN);
+        memcpy(arpHdr->ar_tha, (char *) generate_ethernet_addr(0), ETHER_ADDR_LEN);
+        arpHdr->ar_sip = currIf->ip;
+        arpHdr->ar_tip = ip; 
+
+        copyPacket = malloc(arpPacketLen);
+        memcpy(copyPacket, ethHdr, arpPacketLen);
+        print_hdrs(copyPacket, arpPacketLen);
+        sr_send_packet(sr, copyPacket, arpPacketLen, currIf->name);
+
+        currIf = currIf->next;
+    }
+    printf("$$$ -> Send ARP request processing complete.\n");
 }
