@@ -169,13 +169,43 @@ void sr_handlepacket(struct sr_instance* sr,
               struct sr_arpreq *req = sr_arpcache_queuereq(&sr->cache, arp_hdr->ar_sip, arpres, len, intf->name);
               handle_arpreq(sr, req);
           }
-          
+
         free(cached);
         free(arpres);
       }
 
       else if (ntohs(arp_hdr->ar_op) == arp_op_reply){
         printf("****ARP Reply!!!!!\n");
+        struct sr_arpreq *cached = sr_arpcache_insert(&sr->cache, arp_hdr->ar_sha, arp_hdr->ar_sip);
+
+            /* Send outstanding ARP packets */
+            if (cached)
+            {
+                struct sr_packet *packet = cached->packets;
+
+                struct sr_if *packet_intf = NULL;
+                sr_ethernet_hdr_t *eth_hdr = NULL;
+
+                while (packet)
+                {
+                    packet_intf = sr_get_interface(sr, packet->iface);
+
+                    if (packet_intf)
+                    {
+                        /* Set src/dest MAC addresses */
+                        eth_hdr = (sr_ethernet_hdr_t *)(packet->buf);
+                        memcpy(eth_hdr->ether_dhost, arp_hdr->ar_sha, ETHER_ADDR_LEN);
+                        memcpy(eth_hdr->ether_shost, packet_intf->addr, ETHER_ADDR_LEN);
+
+                        sr_send_packet(sr, packet->buf, packet->len, packet->iface);
+                    }
+
+                    packet = packet->next;
+                }
+
+                sr_arpreq_destroy(&sr->cache, cached);
+            }
+          
       }
 
     } else if (ethtype == ethertype_ip) {
