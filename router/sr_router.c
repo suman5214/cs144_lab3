@@ -151,16 +151,6 @@ void sr_handlepacket(struct sr_instance *sr,
   }
 } /* end sr_ForwardPacket */
 
-/* Send all outstanding packets for the given ARP request entry.
-   Helper function for ARP reply processing code. */
-void sr_arp_reply_send_pending_packets(struct sr_instance *sr,
-                                       struct sr_arpreq *arpReq,
-                                       uint8_t *dhost,
-                                       uint8_t *shost,
-                                       struct sr_if *iface)
-{
-}
-
 /* Send an ARP request. */
 void sr_arp_request_send(struct sr_instance *sr, uint32_t ip)
 {
@@ -366,9 +356,9 @@ void sr_handle_ip_packet(struct sr_instance *sr,
   printf("*** -> It is an IP packet. Print IP header.\n");
 
   struct sr_ip_hdr *ipHdr = (struct sr_ip_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
-
   struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipHdr->ip_dst);
   struct sr_rt *lpmEntry = sr_get_lpm_entry(sr->routing_table, ipHdr->ip_dst);
+  uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
 
   if (!myInterface)
   {
@@ -377,7 +367,6 @@ void sr_handle_ip_packet(struct sr_instance *sr,
     return;
   }
 
-  uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
   if (myInterface)
   {
     printf("***** -> IP packet is for one of my interfaces.\n");
