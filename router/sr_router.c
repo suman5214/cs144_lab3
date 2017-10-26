@@ -67,6 +67,25 @@ void sr_init(struct sr_instance *sr)
  * the method call.
  *
  *---------------------------------------------------------------------*/
+struct sr_if* sr_get_interface_given_ip(struct sr_instance* sr, uint32_t ip)
+{
+    struct sr_if* if_walker = 0;
+
+    /* -- REQUIRES -- */
+    assert(ip);
+    assert(sr);
+
+    if_walker = sr->if_list;
+
+    while(if_walker)
+    {
+       if(if_walker->ip == ip)
+        { return if_walker; }
+        if_walker = if_walker->next;
+    }
+
+    return 0;
+}
 
 void sr_handlepacket(struct sr_instance *sr,
                      uint8_t *packet /* lent */,
@@ -458,22 +477,3 @@ void switch_route(struct sr_instance *sr,
   }
 }
 
-struct sr_if* sr_get_interface_given_ip(struct sr_instance* sr, uint32_t ip)
-{
-    struct sr_if* if_walker = 0;
-
-    /* -- REQUIRES -- */
-    assert(ip);
-    assert(sr);
-
-    if_walker = sr->if_list;
-
-    while(if_walker)
-    {
-       if(if_walker->ip == ip)
-        { return if_walker; }
-        if_walker = if_walker->next;
-    }
-
-    return 0;
-}
