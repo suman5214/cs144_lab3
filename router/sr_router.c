@@ -159,7 +159,7 @@ void sr_handlepacket(struct sr_instance* sr,
               memcpy(eth_hdr->ether_shost, intf->addr, ETHER_ADDR_LEN); /* Source: MAC address from the interface that sent it */
               memcpy(eth_hdr->ether_dhost, cached->mac, ETHER_ADDR_LEN);     /* Dest: MAC address from ARP cache entry */
 
-              sr_send_packet(sr, packet, len, interface->name);
+              sr_send_packet(sr, packet, len, intf->name);
               
           }
           else
