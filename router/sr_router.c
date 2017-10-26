@@ -159,14 +159,17 @@ void sr_handlepacket(struct sr_instance* sr,
               memcpy(eth_hdr->ether_shost, intf->addr, ETHER_ADDR_LEN); /* Source: MAC address from the interface that sent it */
               memcpy(eth_hdr->ether_dhost, cached->mac, ETHER_ADDR_LEN);     /* Dest: MAC address from ARP cache entry */
 
-              sr_send_packet(sr, packet, len, intf->name);
+              sr_send_packet(sr, arpres, len, intf->name);
               
           }
           else
           {
               /* Queue ARP request */
               printf("send_packet: Queue ARP request\n");
+              struct sr_arpreq *req = sr_arpcache_queuereq(&sr->cache, arp_hdr->ar_sip, arpres, len, intf->name);
+              handle_arpreq(sr, req);
           }
+          
         free(cached);
         free(arpres);
       }
