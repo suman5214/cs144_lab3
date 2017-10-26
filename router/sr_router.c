@@ -106,7 +106,7 @@ void sr_handlepacket(struct sr_instance* sr,
         }
 
         if(sr_arpcache_entry_update(&(sr->cache), arp_hdr->ar_sip)){
-          sr_arpcache_insert(&(sr->cache), arp_hdr->ar_sha, ar_sip);
+          sr_arpcache_insert(&(sr->cache), arp_hdr->ar_sha, arp_hdr->ar_sip);
           printf("Add MAC->IP mapping of sender to my ARP cache.\n");
         }
       }
