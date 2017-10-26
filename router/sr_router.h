@@ -75,4 +75,8 @@ void sr_set_ether_addr(struct sr_instance* , const unsigned char* );
 void sr_print_if_list(struct sr_instance* );
 struct sr_if *sr_get_interface_ip(struct sr_instance*, uint32_t);
 
+uint32_t ip_cksum (sr_ip_hdr_t *ipHdr, int len);
+uint32_t icmp_cksum (sr_icmp_hdr_t *icmpHdr, int len);
+uint32_t icmp3_chksum(sr_icmp_t3_hdr_t *icmp3_hdr, int len);
+
 #endif /* SR_ROUTER_H */
