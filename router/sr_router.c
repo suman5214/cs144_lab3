@@ -82,12 +82,30 @@ void sr_handlepacket(struct sr_instance* sr,
 
   print_hdr_eth(packet);
 
-  sr_ethernet_hdr_t *eHdr = (sr_ethernet_hdr_t *) packet;
+  sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *) packet;
   uint8_t *destAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
   uint8_t *srcAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-  memcpy(destAddr, eHdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-  memcpy(srcAddr, eHdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-  uint16_t pktType = ntohs(eHdr->ether_type);
+  memcpy(destAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+  memcpy(srcAddr, eth_hdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+  uint16_t ethtype = ethertype(packet);
+
+  if (is_packet_valid(packet, len)) {
+    if (ethtype == ethertype_arp) {
+      printf("**** -> Validate ARP packet.\n");
+      if (len >= sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t)) {
+       printf("***** -> Invalid packet length.\n");
+       return 1;
+      }
+      printf("***** -> Packet length is correct.\n");
+
+    } else if (ethtype == ethertype_ip) {
+      if (len < sizeof(sr_ip_hdr_t))
+      {
+        printf("***** -> Packet length is not correct.\n");
+      }
+      // sr_handle_ip_packet(sr, packet, len, srcAddr, destAddr, interface, eHdr);
+    }
+  }
 
 }/* end sr_ForwardPacket */
 
