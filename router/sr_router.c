@@ -142,11 +142,11 @@ struct sr_if *myInterface = sr_get_interface(sr, interface);
 
 icmpHdr->icmp_type = 0;
 icmpHdr->icmp_code = 0;
-icmpHdr->icmp_sum = cksum(icmpHdr, len - icmpOffset);
+icmpHdr->icmp_sum = icmp_cksum(icmpHdr, len - icmpOffset);
 
 ipHdr->ip_dst = ipHdr->ip_src;
 ipHdr->ip_src = myInterface->ip;
-ipHdr->ip_sum = cksum(ipHdr, sizeof(sr_ip_hdr_t));
+ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
 uint8_t *destAddr = malloc(ETHER_ADDR_LEN);
 uint8_t *srcAddr = malloc(ETHER_ADDR_LEN);
@@ -229,13 +229,13 @@ void sr_send_icmp_error_packet(uint8_t type,
   
   memcpy(icmp3Hdr->data, ipPacket, ICMP_DATA_SIZE);
 
-  icmp3Hdr->icmp_sum = cksum(icmp3Hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
+  icmp3Hdr->icmp_sum = icmp3_cksum(icmp3Hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
 
   printf("### -> Check routing table, perform LPM.\n");
   struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ipDst);
   if (!longest_matching_entry)
   {
-    printf("#### -> Match NOT found \n");
+    printf("#### -> Match NOT found in routing table. Check ARP cache.\n");
     return;
   }
     printf("#### -> Match found in routing table. Check ARP cache.\n");
@@ -243,11 +243,11 @@ void sr_send_icmp_error_packet(uint8_t type,
     struct sr_if *interface = sr_get_interface(sr, longest_matching_entry->interface);
 
     ipHdr->ip_src = interface->ip;
-    ipHdr->ip_sum = cksum(ipHdr, sizeof(sr_ip_hdr_t));
+    ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
     
     struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), longest_matching_entry->gw.s_addr);
-    if (arpEntry != NULL)
+    if (arpEntry )
     {
       printf("##### -> Next-hop-IP to MAC mapping found in ARP cache. Forward packet to next hop.\n");
       memcpy(eth_hdr->ether_shost, interface->addr, ETHER_ADDR_LEN);
@@ -268,13 +268,12 @@ void sr_send_icmp_error_packet(uint8_t type,
 
 
 void sr_handle_arp_packet(struct sr_instance *sr,
-                          uint8_t *packet /* lent */,
+                          uint8_t *packet ,
                           unsigned int len,
-                          char *interface)
+                          char *iFace)
 {
 
   printf("*** -> It is an ARP packet. Print ARP header.\n");
-  print_hdr_arp(packet + sizeof(sr_ethernet_hdr_t));
 
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
   sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
@@ -283,16 +282,12 @@ void sr_handle_arp_packet(struct sr_instance *sr,
   memcpy(senderHardAddr, apr_hdr->ar_sha, ETHER_ADDR_LEN);
   memcpy(targetHardAddr, apr_hdr->ar_tha, ETHER_ADDR_LEN);
 
-  uint32_t senderIP = apr_hdr->ar_sip;
-  uint32_t targetIP = apr_hdr->ar_tip;
-  unsigned short op = ntohs(apr_hdr->ar_op);
-
-  int update_flag = sr_arpcache_entry_update(&(sr->cache), senderIP);
-  struct sr_arpentry *cached = sr_arpcache_lookup(&(sr->cache), senderIP);
+  int update_flag = sr_arpcache_entry_update(&(sr->cache), apr_hdr->ar_sip);
+  struct sr_arpentry *cached = sr_arpcache_lookup(&(sr->cache), apr_hdr->ar_sip);
   /* check if the ARP packet is for one of my interfaces. */
-  struct sr_if *myInterface = sr_get_interface_given_ip(sr, targetIP);
+  struct sr_if *myInterface = sr_get_interface_given_ip(sr, apr_hdr->ar_tip);
 
-  if (op == arp_op_request)
+  if (ntohs(apr_hdr->ar_op) == arp_op_request)
   {
     printf("**** -> It is an ARP request.\n");
 
@@ -307,19 +302,19 @@ void sr_handle_arp_packet(struct sr_instance *sr,
 
       memcpy(apr_hdr->ar_sha, myInterface->addr, ETHER_ADDR_LEN);
       memcpy(apr_hdr->ar_tha, senderHardAddr, ETHER_ADDR_LEN);
-      apr_hdr->ar_sip = targetIP;
-      apr_hdr->ar_tip = senderIP;
+      apr_hdr->ar_sip = apr_hdr->ar_tip;
+      apr_hdr->ar_tip = apr_hdr->ar_sip;
       apr_hdr->ar_op = htons(arp_op_reply);
       sr_send_packet(sr, packet, len, myInterface->name);
     }
     printf("******* -> ARP request processing complete.\n");
   }
-  else if (op == arp_op_reply)
+  else if (ntohs(apr_hdr->ar_op) == arp_op_reply)
   {
     printf("**** -> It is an ARP reply.\n");
     printf("***** -> Add MAC->IP mapping of sender to my ARP cache.\n");
 
-    struct sr_arpreq *arpReq = sr_arpcache_insert(&(sr->cache), senderHardAddr, senderIP);
+    struct sr_arpreq *arpReq = sr_arpcache_insert(&(sr->cache), senderHardAddr, apr_hdr->ar_sip);
     if (!arpReq)
     {
       printf("****** -> Send outstanding packets.\n");
@@ -339,6 +334,9 @@ void sr_handle_arp_packet(struct sr_instance *sr,
       sr_arpreq_destroy(&(sr->cache), arpReq);
     }
     printf("******* -> ARP reply processing complete.\n");
+  }
+  else{
+    printf("Not valid ARP OP CODE\n")
   }
 }
 
@@ -401,7 +399,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
     }
     else
     {
-      ipHdr->ip_sum = cksum(ipHdr, sizeof(sr_ip_hdr_t)); /* recompute checksum */
+      ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t)); /* recompute checksum */
       struct sr_arpentry *arp_request = sr_arpcache_lookup(&sr->cache, longest_matching_entry->gw.s_addr);
 
       if (arp_request)
