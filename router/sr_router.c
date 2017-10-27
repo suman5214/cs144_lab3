@@ -141,7 +141,7 @@ void sr_handlepacket(struct sr_instance *sr,
   assert(packet);
   assert(interface);
 
-  print_hdrs(packet);
+  print_hdrs(packet,len);
 
     if (ethertype(packet) == ethertype_arp)
     {
@@ -202,7 +202,7 @@ void send_icmp_packet(struct sr_instance *sr,uint32_t sender_add,uint8_t *icmp_p
     memcpy(icmp_hdr->data, icmp_packet, ICMP_DATA_SIZE);
     icmp_hdr->icmp_sum = 0;
     icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
-    
+
     /* initialize ip header */
     sr_ip_hdr_t *ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
     ip_hdr->ip_hl = sizeof(sr_ip_hdr_t) / 4;;
