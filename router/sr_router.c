@@ -106,6 +106,17 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip){
   printf("$$$ -> Send ARP request processing complete.\n");
 }
 
+uint32_t ip_cksum (sr_ip_hdr_t *ipHdr, int len) {
+  uint16_t currChksum, calcChksum;
+
+  currChksum = ipHdr->ip_sum; 
+  ipHdr->ip_sum = 0;
+  calcChksum = cksum(ipHdr, len);
+  ipHdr->ip_sum = currChksum;    
+
+  return calcChksum;
+}
+
  struct sr_if* get_IP(struct sr_instance* sr, uint32_t ip)
 {
     /* -- REQUIRES -- */
@@ -175,13 +186,8 @@ void send_icmp_packet(struct sr_instance *sr,
         /*Set ip header*/
         ip_hdr->ip_dst = ip_hdr->ip_src;
         ip_hdr->ip_src = Iface->ip;
-
-        uint16_t currChksum, calcChksum;
-        currChksum = ip_hdr->ip_sum; 
-        ip_hdr->ip_sum = 0;
-        calcChksum = cksum(ip_hdr, len);
-        ip_hdr->ip_sum = currChksum;
-
+        
+        ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
 
         memcpy(eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN); 
         memcpy(eth_hdr->ether_shost, tempAddr, ETHER_ADDR_LEN);
