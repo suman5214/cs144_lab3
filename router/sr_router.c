@@ -142,11 +142,11 @@ struct sr_if *curIFACE = sr_get_interface(sr, interface);
 
 icmpHdr->icmp_type = 0;
 icmpHdr->icmp_code = 0;
-icmpHdr->icmp_sum = icmp_cksum(icmpHdr, len - icmpOffset);
+icmpHdr->icmp_sum = cksum(icmpHdr, len - icmpOffset);
 
 ip_hdr->ip_dst = ip_hdr->ip_src;
 ip_hdr->ip_src = curIFACE->ip;
-ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
 
 uint8_t *destAddr = malloc(ETHER_ADDR_LEN);
 uint8_t *srcAddr = malloc(ETHER_ADDR_LEN);
