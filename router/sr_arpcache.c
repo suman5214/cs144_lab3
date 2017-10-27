@@ -48,20 +48,19 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
               mac_addr[3] = 255;
               mac_addr[4] = 255;
               mac_addr[5] = 255;
-              int arpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
-              uint8_t *arpPacket = malloc(arpPacketLen);
-            
-              sr_ethernet_hdr_t *eth_hdr = (struct sr_ethernet_hdr *)arpPacket;
+              
+              uint8_t *arp_req = malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
+              sr_ethernet_hdr_t *eth_hdr = (struct sr_ethernet_hdr *)arp_req;
               memcpy(eth_hdr->ether_dhost, mac_addr, ETHER_ADDR_LEN);
             
               struct sr_if *iFace = sr->if_list;
-              uint8_t *copyPacket;
+
               while (iFace)
               {            
                 memcpy(eth_hdr->ether_shost, (uint8_t *)iFace->addr, ETHER_ADDR_LEN);
                 eth_hdr->ether_type = htons(ethertype_arp);
             
-                sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(arpPacket + sizeof(sr_ethernet_hdr_t));
+                sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(arp_req + sizeof(sr_ethernet_hdr_t));
                 apr_hdr->ar_hrd = htons(arp_hrd_ethernet);
                 apr_hdr->ar_pro = htons(ethertype_ip);
                 apr_hdr->ar_hln = ETHER_ADDR_LEN;
@@ -72,10 +71,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
                 apr_hdr->ar_sip = iFace->ip;
                 apr_hdr->ar_tip = req->ip;
             
-                copyPacket = malloc(arpPacketLen);
-                memcpy(copyPacket, eth_hdr, arpPacketLen);
-                print_hdrs(copyPacket, arpPacketLen);
-                sr_send_packet(sr, arpPacket, arpPacketLen, iFace->name);
+                sr_send_packet(sr, arp_req, sizeof(arp_req), iFace->name);
             
                 iFace = iFace->next;
               }
