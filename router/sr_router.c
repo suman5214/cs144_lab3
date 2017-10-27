@@ -257,12 +257,12 @@ void sr_send_icmp_error_packet(uint8_t type,
     else
     {
       printf("##### -> No next-hop-IP to MAC mapping found in ARP cache. Send ARP request to find it.\n");
-      struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),
+      struct sr_arp_req *arp_req = sr_arpcache_queuereq(&(sr->cache),
                                                       longest_matching_entry->gw.s_addr,
                                                       packet,
                                                       icmpPacketLen,
                                                       &(interface->name));
-      handle_arpreq(sr, arpReq);
+      handle_arp_req(sr, arp_req);
     }
 }
 
@@ -308,12 +308,12 @@ void sr_handle_arp_packet(struct sr_instance *sr,
   {
     printf("It is an ARP reply.\n");
 
-    struct sr_arpreq *arpReq = sr_arpcache_insert(&(sr->cache), apr_hdr->ar_sha, apr_hdr->ar_sip);
-    if (!arpReq)
+    struct sr_arp_req *arp_req = sr_arpcache_insert(&(sr->cache), apr_hdr->ar_sha, apr_hdr->ar_sip);
+    if (!arp_req)
     {
       printf("Send outstanding packets.\n");
 
-      struct sr_packet *unsent_packet = arpReq->packets;
+      struct sr_packet *unsent_packet = arp_req->packets;
       
 
       while (unsent_packet)
@@ -325,7 +325,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
         sr_send_packet(sr, unsent_packet->buf, unsent_packet->len, curIFACE);
         unsent_packet = unsent_packet->next;
       }
-      sr_arpreq_destroy(&(sr->cache), arpReq);
+      sr_arp_req_destroy(&(sr->cache), arp_req);
     }
   }
   else{
@@ -409,8 +409,8 @@ void sr_handle_ip_packet(struct sr_instance *sr,
       {
         printf("******** -> No next-hop-IP to MAC mapping found in ARP cache. Send ARP request to find it.\n");
 
-        struct sr_arpreq *req = sr_arpcache_queuereq(&(sr->cache), longest_matching_entry->gw.s_addr, packet, len, &(longest_matching_entry->interface));
-        handle_arpreq(sr, req);
+        struct sr_arp_req *req = sr_arpcache_queuereq(&(sr->cache), longest_matching_entry->gw.s_addr, packet, len, &(longest_matching_entry->interface));
+        handle_arp_req(sr, req);
       }
     }
   }
