@@ -347,10 +347,10 @@ void sr_handle_ip_packet(struct sr_instance *sr,
 {
   
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
-  uint8_t *destAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-  uint8_t *srcAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-  memcpy(destAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-  memcpy(srcAddr, eth_hdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+  uint8_t *destAddr = malloc( ETHER_ADDR_LEN);
+  uint8_t *srcAddr = malloc( ETHER_ADDR_LEN);
+  memcpy(destAddr, eth_hdr->ether_dhost,  ETHER_ADDR_LEN);
+  memcpy(srcAddr, eth_hdr->ether_shost,  ETHER_ADDR_LEN);
 
   printf("*** -> It is an IP packet. Print IP header.\n");
 
