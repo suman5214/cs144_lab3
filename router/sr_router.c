@@ -335,6 +335,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
 
   if (curIFACE)
   {
+    sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
     
     if (icmpHdr->icmp_type == 8)
     {
