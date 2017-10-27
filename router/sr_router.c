@@ -192,18 +192,13 @@ void sr_handlepacket(struct sr_instance *sr,
 /* Send an ICMP error. */
 void send_icmp_packet(struct sr_instance *sr,
                                uint32_t sender_add,
-                               uint8_t *ipPacket,
+                               uint8_t *icmp_packet,
                                uint8_t type,
                                uint8_t code)
 {
+  uint8_t *packet = malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t));
 
-  /* packet initialization */
-  unsigned int icmpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
-  uint8_t *packet = malloc(icmpPacketLen);
-
-  /* packet headers */
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
-  
 
   /* initialize ethernet header */
 
@@ -216,6 +211,7 @@ void send_icmp_packet(struct sr_instance *sr,
   
   icmp_hdr->icmp_code = code;
   icmp_hdr->icmp_type = type;
+  memcpy(icmp_hdr->data, icmp_packet, ICMP_DATA_SIZE);
 
   /* initialize ip header */
   sr_ip_hdr_t *ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
@@ -230,32 +226,27 @@ void send_icmp_packet(struct sr_instance *sr,
   ip_hdr->ip_p = ip_protocol_icmp;
   
   
-  memcpy(icmp_hdr->data, ipPacket, ICMP_DATA_SIZE);
-
   icmp_hdr->icmp_sum = icmp3_cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
 
-  printf("### -> Check routing table, perform LPM.\n");
   struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, sender_add);
   if (!longest_matching_entry)
   {
-    printf("#### -> Match NOT found in routing table. Check ARP cache.\n");
+    printf("No MAC->IP record in talbe\n");
     return;
   }
-    printf("#### -> Match found in routing table. Check ARP cache.\n");
 
     struct sr_if *interface = sr_get_interface(sr, longest_matching_entry->interface);
 
     ip_hdr->ip_src = interface->ip;
     ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
 
-    
     struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), longest_matching_entry->gw.s_addr);
     if (arpEntry )
     {
       printf("##### -> Next-hop-IP to MAC mapping found in ARP cache. Forward packet to next hop.\n");
       memcpy(eth_hdr->ether_shost, interface->addr, ETHER_ADDR_LEN);
       memcpy(eth_hdr->ether_dhost, arpEntry->mac, ETHER_ADDR_LEN);
-      sr_send_packet(sr, packet, icmpPacketLen, interface->name);
+      sr_send_packet(sr, packet, sizeof(packet), interface->name);
     }
     else
     {
@@ -263,7 +254,7 @@ void send_icmp_packet(struct sr_instance *sr,
       struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),
                                                       longest_matching_entry->gw.s_addr,
                                                       packet,
-                                                      icmpPacketLen,
+                                                      sizeof(packet),
                                                       &(interface->name));
       handle_arpreq(sr, arpReq);
     }
