@@ -155,7 +155,6 @@ void sr_handlepacket(struct sr_instance *sr,
 
 
 
-/* Send an ICMP error. */
 void send_icmp_packet(struct sr_instance *sr,
                                uint32_t sender_add,
                                uint8_t *icmp_packet,
@@ -166,21 +165,21 @@ void send_icmp_packet(struct sr_instance *sr,
 {
   if(type ==0 && code == 0){
     
-        sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(icmp_packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+        sr_icmp_hdr_t *icmp_hdr = (sr_icmp_hdr_t *)(icmp_packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
         sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)icmp_packet;
         struct sr_ip_hdr *ip_hdr = (struct sr_ip_hdr *)(icmp_packet + sizeof(sr_ethernet_hdr_t));
         struct sr_if *Iface = sr_get_interface(sr, interface);
-        
-        icmpHdr->icmp_type = 0;
-        icmpHdr->icmp_code = 0;
-        icmpHdr->icmp_sum = icmp_cksum(icmpHdr, sizeof(sr_icmp_hdr_t));
-        
+        uint8_t *tempAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
+        memcpy(tempAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+
+        /*Set icmp header*/
+        icmp_hdr->icmp_type = 0;
+        icmp_hdr->icmp_code = 0;
+        icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, sizeof(sr_icmp_hdr_t));
+        /*Set ip header*/
         ip_hdr->ip_dst = ip_hdr->ip_src;
         ip_hdr->ip_src = Iface->ip;
         ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
-
-        uint8_t *tempAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-        memcpy(tempAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
 
         memcpy(eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN); 
         memcpy(eth_hdr->ether_shost, tempAddr, ETHER_ADDR_LEN);
@@ -258,12 +257,8 @@ void sr_handle_arp_packet(struct sr_instance *sr,
                           unsigned int len,
                           char *iFace)
 {
-
-  printf("This is a ARP packet\n");
-
-  sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
   sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-
+  sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
   struct sr_if *curIFACE = sr_get_interface_given_ip(sr, apr_hdr->ar_tip);
 
   if (ntohs(apr_hdr->ar_op) == arp_op_request)
@@ -319,38 +314,6 @@ void sr_handle_arp_packet(struct sr_instance *sr,
   }
 }
 
-void icmp_direct_echo_reply(struct sr_instance *sr,
-  uint8_t *packet /* lent */,
-  unsigned int len,
-  char *interface) {
-
-int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
-sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
-struct sr_ip_hdr *ip_hdr = (struct sr_ip_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
-/* We don't have to look up the routing table for this one */
-
-uint8_t *destAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-uint8_t *srcAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-memcpy(destAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-memcpy(srcAddr, eth_hdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-
-struct sr_if *myInterface = sr_get_interface(sr, interface);
-
-icmpHdr->icmp_type = 0;
-icmpHdr->icmp_code = 0;
-icmpHdr->icmp_sum = icmp_cksum(icmpHdr, len - icmpOffset);
-
-ip_hdr->ip_dst = ip_hdr->ip_src;
-ip_hdr->ip_src = myInterface->ip;
-ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
-
-memcpy(eth_hdr->ether_dhost, srcAddr, sizeof(uint8_t) * ETHER_ADDR_LEN); 
-memcpy(eth_hdr->ether_shost, destAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
-
-sr_send_packet(sr, packet, len, interface);
-}
-
 void sr_handle_ip_packet(struct sr_instance *sr,
                          uint8_t *packet /* lent */,
                          unsigned int len,
@@ -358,7 +321,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
 {
   
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
-  printf("This is a  IP packet. Print IP header.\n");
+
 
   struct sr_ip_hdr *ip_hdr = (struct sr_ip_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
   struct sr_if *curIFACE = sr_get_interface_given_ip(sr, ip_hdr->ip_dst);
@@ -367,12 +330,11 @@ void sr_handle_ip_packet(struct sr_instance *sr,
 
   if (curIFACE)
   {
-    sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+    sr_icmp_hdr_t *icmp_hdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
     
-    if (icmpHdr->icmp_type == 8)
+    if (icmp_hdr->icmp_type == 8)
     {
       send_icmp_packet(sr, ip_hdr->ip_src, packet,0, 0,len,interface);
-      
     }
     else
     {
