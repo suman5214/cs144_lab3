@@ -199,13 +199,14 @@ void send_icmp_packet(struct sr_instance *sr,
 
         /*Set icmp header*/
         icmp_hdr->icmp_type = 0;
-        icmp_hdr->icmp_code = 0;
         icmp_hdr->icmp_sum = 0;
+        icmp_hdr->icmp_code = 0;
         icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
         /*Set ip header*/
         ip_hdr->ip_dst = ip_hdr->ip_src;
+        ip_hdr->ip_sum = 0;
         ip_hdr->ip_src = Iface->ip;
-        ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+        ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
 
         memcpy(eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN); 
         memcpy(eth_hdr->ether_shost, tempAddr, ETHER_ADDR_LEN);
@@ -258,7 +259,8 @@ void send_icmp_packet(struct sr_instance *sr,
       
       if (arp_req)
       {
-        ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+        ip_hdr->ip_sum = 0;
+        ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
         ip_hdr->ip_src = iFace->ip;
         memcpy(eth_hdr->ether_dhost, arp_req->mac, ETHER_ADDR_LEN);
         memcpy(eth_hdr->ether_shost, iFace->addr, ETHER_ADDR_LEN); 
@@ -266,7 +268,8 @@ void send_icmp_packet(struct sr_instance *sr,
       }
       else
       {
-        ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+        ip_hdr->ip_sum = 0;
+        ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
         ip_hdr->ip_src = iFace->ip;
         struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),lmp_addr,packet,sizeof(packet),iFace->name);
         handle_arpreq(sr, arpReq);
@@ -370,7 +373,8 @@ void handle_IP(struct sr_instance *sr,
     ip_hdr->ip_ttl = ip_hdr->ip_ttl - 1 ; 
     if (ip_hdr->ip_ttl > 0)
     {
-      ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+      ip_hdr->ip_sum = 0;
+      ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
       struct sr_arpentry *arp_request = sr_arpcache_lookup(&sr->cache, longest_matching_entry->gw.s_addr);
 
       if (arp_request)
