@@ -375,12 +375,10 @@ void sr_handle_ip_packet(struct sr_instance *sr,
   }
   else
   {
-    printf("***** -> IP packet is not for one of my interfaces.\n");
 
-    ipHdr->ip_ttl--; /* decrement TTL count. */
-    if (ipHdr->ip_ttl <= 0)
+    ipHdr->ip_ttl = ipHdr->ip_ttl -1 ; 
+    if (ipHdr->ip_ttl = 0)
     {
-      printf("****** -> TTL field is now 0. Send time exceeded.\n");
       sr_send_icmp_error_packet(11, 0, sr, ipHdr->ip_src, (uint8_t *)ipHdr);
     }
     else
