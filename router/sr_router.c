@@ -180,7 +180,7 @@ void send_icmp_packet(struct sr_instance *sr,
         currChksum = ip_hdr->ip_sum; 
         ip_hdr->ip_sum = 0;
         calcChksum = cksum(ip_hdr, len);
-        ip_hdr->ip_sum = calcChksum;
+        ip_hdr->ip_sum = currChksum;
 
 
         memcpy(eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN); 
