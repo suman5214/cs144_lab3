@@ -87,45 +87,6 @@ struct sr_if* sr_get_interface_given_ip(struct sr_instance* sr, uint32_t ip)
     return 0;
 }
 
-void sr_arp_request_send(struct sr_instance *sr, uint32_t ip){
-  printf("$$$ -> Send ARP request.\n");
-
-  int arpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
-  uint8_t *arpPacket = malloc(arpPacketLen);
-
-  sr_ethernet_hdr_t *eth_hdr = (struct sr_ethernet_hdr *)arpPacket;
-  memcpy(eth_hdr->ether_dhost, generate_ethernet_addr(255), ETHER_ADDR_LEN);
-
-  struct sr_if *currIf = sr->if_list;
-  uint8_t *copyPacket;
-  while (currIf != NULL)
-  {
-    printf("$$$$ -> Send ARP request from interface %s.\n", currIf->name);
-
-    memcpy(eth_hdr->ether_shost, (uint8_t *)currIf->addr, ETHER_ADDR_LEN);
-    eth_hdr->ether_type = htons(ethertype_arp);
-
-    sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(arpPacket + sizeof(sr_ethernet_hdr_t));
-    apr_hdr->ar_hrd = htons(1);
-    apr_hdr->ar_pro = htons(2048);
-    apr_hdr->ar_hln = 6;
-    apr_hdr->ar_pln = 4;
-    apr_hdr->ar_op = htons(arp_op_request);
-    memcpy(apr_hdr->ar_sha, currIf->addr, ETHER_ADDR_LEN);
-    memcpy(apr_hdr->ar_tha, (char *)generate_ethernet_addr(0), ETHER_ADDR_LEN);
-    apr_hdr->ar_sip = currIf->ip;
-    apr_hdr->ar_tip = ip;
-
-    copyPacket = malloc(arpPacketLen);
-    memcpy(copyPacket, eth_hdr, arpPacketLen);
-    print_hdrs(copyPacket, arpPacketLen);
-    sr_send_packet(sr, copyPacket, arpPacketLen, currIf->name);
-
-    currIf = currIf->next;
-  }
-  printf("$$$ -> Send ARP request processing complete.\n");
-}
-
 void icmp_direct_echo_reply(struct sr_instance *sr,
   uint8_t *packet /* lent */,
   unsigned int len,
@@ -140,11 +101,13 @@ int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
 /* We don't have to look up the routing table for this one */
 struct sr_if *myInterface = sr_get_interface(sr, interface);
 
+icmpHdr->icmp_type = 0;
+icmpHdr->icmp_code = 0;
+icmpHdr->icmp_sum = cksum(icmpHdr, len - icmpOffset);
+
 ipHdr->ip_dst = ipHdr->ip_src;
 ipHdr->ip_src = myInterface->ip;
 ipHdr->ip_sum = cksum(ipHdr, sizeof(sr_ip_hdr_t));
-icmpHdr->icmp_type , icmpHdr->icmp_code = 0;
-icmpHdr->icmp_sum = cksum(icmpHdr, sizeof(sr_icmp_t3_hdr_t));
 
 uint8_t *destAddr = malloc(ETHER_ADDR_LEN);
 uint8_t *srcAddr = malloc(ETHER_ADDR_LEN);
@@ -154,6 +117,7 @@ memcpy(srcAddr, eth_hdr->ether_shost, ETHER_ADDR_LEN);
 memcpy(eth_hdr->ether_dhost, srcAddr, ETHER_ADDR_LEN);
 memcpy(eth_hdr->ether_shost, destAddr, ETHER_ADDR_LEN);
 
+print_hdrs(packet, len);
 sr_send_packet(sr, packet, len, interface);
 }
 
