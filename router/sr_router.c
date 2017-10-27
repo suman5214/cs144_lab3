@@ -379,5 +379,38 @@ void sr_handle_ip_packet(struct sr_instance *sr,
 
     printf("********* -> IP packet processing complete.\n");
   }
-  
+  else
+  {
+    printf("***** -> IP packet is not for one of my interfaces.\n");
+
+    ip_hdr->ip_ttl--; /* decrement TTL count. */
+    if (ip_hdr->ip_ttl <= 0)
+    {
+      printf("****** -> TTL field is now 0. Send time exceeded.\n");
+      sr_send_icmp_error_packet(11, 0, sr, ip_hdr->ip_src, (uint8_t *)ip_hdr);
+    }
+    else
+    {
+      ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t)); /* recompute checksum */
+      struct sr_arpentry *arp_request = sr_arpcache_lookup(&sr->cache, longest_matching_entry->gw.s_addr);
+
+      if (arp_request)
+      {
+        printf("******** -> Next-hop-IP to MAC mapping found in ARP cache. Forward packet to next hop.\n");
+
+        struct sr_if *outInterface = sr_get_interface(sr, longest_matching_entry->interface);
+
+        memcpy(eth_hdr->ether_dhost, arp_request->mac, ETHER_ADDR_LEN);
+        memcpy(eth_hdr->ether_shost, outInterface->addr, ETHER_ADDR_LEN);
+        sr_send_packet(sr, packet, len, outInterface);
+      }
+      else
+      {
+        printf("******** -> No next-hop-IP to MAC mapping found in ARP cache. Send ARP request to find it.\n");
+
+        struct sr_arpreq *req = sr_arpcache_queuereq(&(sr->cache), longest_matching_entry->gw.s_addr, packet, len, &(longest_matching_entry->interface));
+        handle_arpreq(sr, req);
+      }
+    }
+  }
 }
