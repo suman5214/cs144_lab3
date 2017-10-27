@@ -225,14 +225,14 @@ void sr_send_icmp_error_packet(uint8_t type,
   ip_hdr->ip_off = htons(IP_DF);
   ip_hdr->ip_ttl = 255;
   ip_hdr->ip_p = ip_protocol_icmp;
-  ip_hdr->ip_dst = ipPacket->ip_dst;
+  ip_hdr->ip_dst = ipPacket->ip_src;
   
   memcpy(icmp3Hdr->data, ipPacket, ICMP_DATA_SIZE);
 
   icmp3Hdr->icmp_sum = icmp3_cksum(icmp3Hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
 
   printf("### -> Check routing table, perform LPM.\n");
-  struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ipPacket->ip_dst);
+  struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ipPacket->ip_src);
   if (!longest_matching_entry)
   {
     printf("#### -> Match NOT found in routing table. Check ARP cache.\n");
