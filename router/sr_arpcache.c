@@ -33,26 +33,27 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
 */
 void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
 {
-    time_t now = time(NULL);
+    time_t t;
+    time(&t);
 
-    if (difftime(time(0), req->sent) > 1.0)
+    if (difftime(t, req->sent) >= 1.0)
     {
-        if (req->times_sent >= 5)
-        {
-            struct sr_packet *currPacket = req->packets;
-            
-                sr_ip_hdr_t *ip_hdr =  ((sr_ip_hdr_t*) (currPacket->buf + sizeof(sr_ethernet_hdr_t)));
-                while (currPacket != NULL) {
-                    send_icmp_packet(sr,ip_hdr->ip_src,ip_hdr,3, 1,0,0);
-                    currPacket = currPacket->next;
-            }
-            sr_arpreq_destroy(&(sr->cache), req);
-        }
-        else
+        if (req->times_sent < 5)
         {
             sr_arp_request_send(sr, req->ip); 
             req->sent = now;
-            req->times_sent++;
+            req->times_sent = req->times_sent + 1;
+        }
+        else
+        {
+            struct sr_packet *packet = req->packets;
+            
+                sr_ip_hdr_t *ip_hdr =  ((sr_ip_hdr_t*) (packet->buf + sizeof(sr_ethernet_hdr_t)));
+                while (packet) {
+                    send_icmp_packet(sr,ip_hdr->ip_src,ip_hdr,3, 1,0,0);
+                    packet = packet->next;
+                }
+            sr_arpreq_destroy(&(sr->cache), req);
         }
     }
 }
