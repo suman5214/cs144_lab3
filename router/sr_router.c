@@ -109,13 +109,13 @@ ipHdr->ip_dst = ipHdr->ip_src;
 ipHdr->ip_src = myInterface->ip;
 ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
-uint8_t *destAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-uint8_t *srcAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-memcpy(destAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-memcpy(srcAddr, eth_hdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+uint8_t *destAddr = malloc(ETHER_ADDR_LEN);
+uint8_t *srcAddr = malloc(ETHER_ADDR_LEN);
+memcpy(destAddr, eth_hdr->ether_dhost, ETHER_ADDR_LEN);
+memcpy(srcAddr, eth_hdr->ether_shost, ETHER_ADDR_LEN);
 
-memcpy(eth_hdr->ether_dhost, srcAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
-memcpy(eth_hdr->ether_shost, destAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+memcpy(eth_hdr->ether_dhost, srcAddr, ETHER_ADDR_LEN);
+memcpy(eth_hdr->ether_shost, destAddr, ETHER_ADDR_LEN);
 
 print_hdrs(packet, len);
 sr_send_packet(sr, packet, len, interface);
@@ -166,7 +166,7 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip){
   {
     printf("$$$$ -> Send ARP request from interface %s.\n", currIf->name);
 
-    memcpy(eth_hdr->ether_shost, (uint8_t *)currIf->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+    memcpy(eth_hdr->ether_shost, (uint8_t *)currIf->addr, ETHER_ADDR_LEN);
     eth_hdr->ether_type = htons(ethertype_arp);
 
     sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(arpPacket + sizeof(sr_ethernet_hdr_t));
@@ -240,13 +240,13 @@ void sr_send_icmp_error_packet(uint8_t type,
     ipHdr->ip_src = interface->ip;
     ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
-    memcpy(eth_hdr->ether_shost, (uint8_t *)interface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+    memcpy(eth_hdr->ether_shost, (uint8_t *)interface->addr, ETHER_ADDR_LEN);
     struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), longest_matching_entry->gw.s_addr);
     if (arpEntry != NULL)
     {
       printf("##### -> Next-hop-IP to MAC mapping found in ARP cache. Forward packet to next hop.\n");
 
-      memcpy(eth_hdr->ether_dhost, (uint8_t *)arpEntry->mac, sizeof(uint8_t) * ETHER_ADDR_LEN);
+      memcpy(eth_hdr->ether_dhost, (uint8_t *)arpEntry->mac, ETHER_ADDR_LEN);
       print_hdrs(packet, icmpPacketLen);
       sr_send_packet(sr, packet, icmpPacketLen, interface->name);
     }
