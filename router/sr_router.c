@@ -226,7 +226,7 @@ void send_icmp_packet(struct sr_instance *sr,
   ip_hdr->ip_p = ip_protocol_icmp;
   
   
-  icmp_hdr->icmp_sum = icmp3_cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
+  icmp_hdr->icmp_sum = icmp3_cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t)); 
 
   struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, sender_add);
   if (!longest_matching_entry)
@@ -234,25 +234,23 @@ void send_icmp_packet(struct sr_instance *sr,
     printf("No MAC->IP record in talbe\n");
     return;
   }
-
-    struct sr_if *interface = sr_get_interface(sr, longest_matching_entry->interface);
-    struct sr_arpentry *arp_req = sr_arpcache_lookup(&(sr->cache), longest_matching_entry->gw.s_addr);
+    struct in_addr *lmp_address= longest_matching_entry->gw.s_addr;
+    struct sr_if *iFace = sr_get_interface(sr, longest_matching_entry->interface);
+    struct sr_arpentry *arp_req = sr_arpcache_lookup(&(sr->cache), lmp_address);
     
-    
-    
-    if (arp_req )
+    if (arp_req)
     {
       ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
-      ip_hdr->ip_src = interface->ip;
+      ip_hdr->ip_src = iFace->ip;
       memcpy(eth_hdr->ether_dhost, arp_req->mac, ETHER_ADDR_LEN);
-      memcpy(eth_hdr->ether_shost, interface->addr, ETHER_ADDR_LEN); 
-      sr_send_packet(sr, packet, sizeof(packet), interface->name);
+      memcpy(eth_hdr->ether_shost, iFace->addr, ETHER_ADDR_LEN); 
+      sr_send_packet(sr, packet, sizeof(packet), iFace->name);
     }
     else
     {
       ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
-      ip_hdr->ip_src = interface->ip;
-      struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),longest_matching_entry->gw.s_addr,packet,sizeof(packet),interface->name);
+      ip_hdr->ip_src = iFace->ip;
+      struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),lmp_address,packet,sizeof(packet),interface->name);
       handle_arpreq(sr, arpReq);
     }
 }
