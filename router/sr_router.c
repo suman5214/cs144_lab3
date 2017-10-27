@@ -361,7 +361,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
     }
     else
     {
-      sr_send_icmp_error_packet(3, 3, sr, ip_hdr->ip_src, ip_hdr);
+      sr_send_icmp_error_packet(sr, ip_hdr->ip_src, ip_hdr,3, 3);
     }
   }
   else
@@ -390,7 +390,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
     }
     else
     {
-      sr_send_icmp_error_packet(11, 0, sr, ip_hdr->ip_src, ip_hdr);
+      sr_send_icmp_error_packet( sr, ip_hdr->ip_src, ip_hdr,11, 0);
     }
   }
 }
