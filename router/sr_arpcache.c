@@ -41,7 +41,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
         if (req->times_sent < 5)
         {
             sr_arp_request_send(sr, req->ip); 
-            req->sent = now;
+            req->sent = t;
             req->times_sent = req->times_sent + 1;
         }
         else
