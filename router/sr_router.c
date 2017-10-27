@@ -376,25 +376,19 @@ void sr_handle_ip_packet(struct sr_instance *sr,
   else
   {
 
-    ip_hdr->ip_ttl = ip_hdr->ip_ttl -1 ; 
-    if (ip_hdr->ip_ttl = 0)
+    ip_hdr->ip_ttl = ip_hdr->ip_ttl - 1 ; 
+    if (ip_hdr->ip_ttl > 0)
     {
-      sr_send_icmp_error_packet(11, 0, sr, ip_hdr->ip_src, (uint8_t *)ip_hdr);
-    }
-    else
-    {
-      ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t)); /* recompute checksum */
+      ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
       struct sr_arpentry *arp_request = sr_arpcache_lookup(&sr->cache, longest_matching_entry->gw.s_addr);
 
       if (arp_request)
       {
-        printf("******** -> Next-hop-IP to MAC mapping found in ARP cache. Forward packet to next hop.\n");
-
-        struct sr_if *outInterface = sr_get_interface(sr, longest_matching_entry->interface);
+        struct sr_if *nextIFACE = sr_get_interface(sr, longest_matching_entry->interface);
 
         memcpy(eth_hdr->ether_dhost, arp_request->mac, ETHER_ADDR_LEN);
-        memcpy(eth_hdr->ether_shost, outInterface->addr, ETHER_ADDR_LEN);
-        sr_send_packet(sr, packet, len, outInterface);
+        memcpy(eth_hdr->ether_shost, nextIFACE->addr, ETHER_ADDR_LEN);
+        sr_send_packet(sr, packet, len, nextIFACE);
       }
       else
       {
@@ -403,6 +397,11 @@ void sr_handle_ip_packet(struct sr_instance *sr,
         struct sr_arpreq *req = sr_arpcache_queuereq(&(sr->cache), longest_matching_entry->gw.s_addr, packet, len, &(longest_matching_entry->interface));
         handle_arpreq(sr, req);
       }
+      
+    }
+    else
+    {
+      sr_send_icmp_error_packet(11, 0, sr, ip_hdr->ip_src, (uint8_t *)ip_hdr);
     }
   }
 }
