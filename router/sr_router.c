@@ -326,9 +326,9 @@ void icmp_direct_echo_reply(struct sr_instance *sr,
   char *interface) {
 
 int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
-sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(icmp_packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)icmp_packet;
-struct sr_ip_hdr *ip_hdr = (struct sr_ip_hdr *)(icmp_packet + sizeof(sr_ethernet_hdr_t));
+sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
+struct sr_ip_hdr *ip_hdr = (struct sr_ip_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
 /* We don't have to look up the routing table for this one */
 
 uint8_t *destAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
