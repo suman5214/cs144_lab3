@@ -226,7 +226,7 @@ void send_icmp_packet(struct sr_instance *sr,
   ip_hdr->ip_p = ip_protocol_icmp;
   
   
-  icmp_hdr->icmp_sum = icmp3_cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t)); 
+  icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t)); 
 
   struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, sender_add);
   if (!longest_matching_entry)
