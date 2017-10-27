@@ -200,7 +200,8 @@ void send_icmp_packet(struct sr_instance *sr,
         /*Set icmp header*/
         icmp_hdr->icmp_type = 0;
         icmp_hdr->icmp_code = 0;
-        icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, sizeof(sr_icmp_hdr_t));
+        icmp_hdr->icmp_sum = 0;
+        icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
         /*Set ip header*/
         ip_hdr->ip_dst = ip_hdr->ip_src;
         ip_hdr->ip_src = Iface->ip;
@@ -242,8 +243,6 @@ void send_icmp_packet(struct sr_instance *sr,
     ip_hdr->ip_ttl = 255;
     ip_hdr->ip_p = ip_protocol_icmp;
     
-    uint16_t currChksum, calcChksum;
-    currChksum = icmp_hdr->icmp_sum; 
     icmp_hdr->icmp_sum = 0;
     icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
 
