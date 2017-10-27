@@ -87,13 +87,15 @@ void sr_init(struct sr_instance *sr)
 }
 
 struct sr_rt *sr_get_lpm_entry(struct sr_rt *rt, uint32_t ip) {
-  unsigned long int longestMatch = 0;
+  unsigned long int max = 0;
   struct sr_rt *rtMatch = NULL;
 
-  while (rt != NULL) {
-     if (((unsigned long int) rt->mask.s_addr & (unsigned long int) ip) == (unsigned long int) rt->dest.s_addr) {
-        if ((rt->mask.s_addr) > longestMatch) {
-           longestMatch = rt->mask.s_addr;
+  while (rt) {
+    unsigned long int mask_addr = ((unsigned long int) rt->mask.s_addr & (unsigned long int) ip);
+    unsigned long int det_addr = (unsigned long int) rt->dest.s_addr;
+     if ( mask_addr == det_addr) {
+        if ((rt->mask.s_addr) > max) {
+           max = rt->mask.s_addr;
            rtMatch = rt;
         }
      }
