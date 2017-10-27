@@ -250,7 +250,7 @@ void send_icmp_packet(struct sr_instance *sr,
     {
       ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
       ip_hdr->ip_src = iFace->ip;
-      struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),longest_matching_entry->gw.s_addr,packet,sizeof(packet),interface->name);
+      struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),longest_matching_entry->gw.s_addr,packet,sizeof(packet),iFace->name);
       handle_arpreq(sr, arpReq);
     }
 }
