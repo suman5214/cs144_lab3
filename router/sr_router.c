@@ -138,8 +138,6 @@ void sr_handlepacket(struct sr_instance *sr,
 
   uint16_t pktType = ntohs(eth_hdr->ether_type);
 
-  if (is_packet_valid(packet, len))
-  {
     if (pktType == ethertype_arp)
     {
       sr_handle_arp_packet(sr, packet, len, interface);
@@ -148,7 +146,6 @@ void sr_handlepacket(struct sr_instance *sr,
     {
       sr_handle_ip_packet(sr, packet, len, interface);
     }
-  }
 } 
 
 void sr_arp_request_send(struct sr_instance *sr, uint32_t ip){
