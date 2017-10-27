@@ -19,16 +19,6 @@ uint16_t cksum (const void *_data, int len) {
   return sum ? sum : 0xffff;
 }
 
-/* Helper function for sr_arp_request_send to generate
-   broadcast MAC address. */ 
-uint8_t *generate_ethernet_addr(uint8_t x) {
-    uint8_t *mac = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-    int i;
-    for (i = 0; i < ETHER_ADDR_LEN; i++) {
-        mac[i] = x;
-    }
-    return mac;
-}
 
 uint16_t ethertype(uint8_t *buf) {
   sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t *)buf;
