@@ -347,13 +347,6 @@ void sr_handle_ip_packet(struct sr_instance *sr,
   struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ipHdr->ip_dst);
   uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
 
-  if (!curIFACE)
-  {
-    printf("*** -> Packet is not for one of my interfaces and no match found in routing table. Send ICMP net unreachable.\n");
-    sr_send_icmp_error_packet(3, 0, sr, ipHdr->ip_src, ipHdr);
-    return;
-  }
-
   if (curIFACE)
   {
     printf("***** -> IP packet is for one of my interfaces.\n");
