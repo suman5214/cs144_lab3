@@ -196,7 +196,9 @@ void send_icmp_packet(struct sr_instance *sr,
                                uint8_t type,
                                uint8_t code)
 {
-  uint8_t *packet = malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t));
+
+  unsigned int icmpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+  uint8_t *packet = malloc(icmpPacketLen);
 
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
 
@@ -246,7 +248,7 @@ void send_icmp_packet(struct sr_instance *sr,
       printf("##### -> Next-hop-IP to MAC mapping found in ARP cache. Forward packet to next hop.\n");
       memcpy(eth_hdr->ether_shost, interface->addr, ETHER_ADDR_LEN);
       memcpy(eth_hdr->ether_dhost, arpEntry->mac, ETHER_ADDR_LEN);
-      sr_send_packet(sr, packet, sizeof(packet), interface->name);
+      sr_send_packet(sr, packet, icmpPacketLen, interface->name);
     }
     else
     {
@@ -254,7 +256,7 @@ void send_icmp_packet(struct sr_instance *sr,
       struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),
                                                       longest_matching_entry->gw.s_addr,
                                                       packet,
-                                                      sizeof(packet),
+                                                      icmpPacketLen,
                                                       &(interface->name));
       handle_arpreq(sr, arpReq);
     }
