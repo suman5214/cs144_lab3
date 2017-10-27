@@ -196,8 +196,8 @@ void send_icmp_packet(struct sr_instance *sr,uint32_t sender_add,uint8_t *icmp_p
         ip_hdr->ip_sum = 0;
         ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
         ip_hdr->ip_src = iFace->ip;
-        struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),lmp_addr,packet,sizeof(packet),iFace->name);
-        handle_arpreq(sr, arpReq);
+        struct sr_arpreq *arp_req = sr_arpcache_queuereq(&(sr->cache),lmp_addr,packet,sizeof(packet),iFace->name);
+        handle_arp_req(sr, arp_req);
       }
     }
 }
@@ -305,8 +305,8 @@ void handle_IP(struct sr_instance *sr,uint8_t *packet /* lent */,unsigned int le
       }
       else
       {
-        struct sr_arpreq *req = sr_arpcache_queuereq(&(sr->cache), longest_matching_entry->gw.s_addr, packet, len, &(longest_matching_entry->interface));
-        handle_arpreq(sr, req);
+        struct sr_arpreq *arp_req = sr_arpcache_queuereq(&(sr->cache), longest_matching_entry->gw.s_addr, packet, len, &(longest_matching_entry->interface));
+        handle_arp_req(sr, arp_req);
       }
 
       ip_hdr->ip_ttl = ip_hdr->ip_ttl - 1 ; 

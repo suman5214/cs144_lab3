@@ -18,20 +18,15 @@
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
    struct sr_arpreq *currReq = sr->cache.requests;
-   struct sr_arpreq *nextReq;
-
-   while (currReq != NULL)
+   while (currReq)
    {
-       nextReq = currReq->next;
-       handle_arpreq(sr, currReq);
-       currReq = nextReq;
+        struct sr_arpreq temp = currReq->next;
+        handle_arp_req(sr, currReq);
+       currReq = temp;
    }
 }
 
-/*
-  Handle ARP request if necessary.
-*/
-void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
+void handle_arp_req(struct sr_instance *sr, struct sr_arpreq *req)
 {
     time_t t;
     time(&t);
