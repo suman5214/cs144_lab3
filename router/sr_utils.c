@@ -19,58 +19,6 @@ uint16_t cksum (const void *_data, int len) {
   return sum ? sum : 0xffff;
 }
 
-int is_packet_valid(uint8_t *packet /* lent */,
-    unsigned int len) {
-
-  int cumulative_sz = sizeof(sr_ethernet_hdr_t);
-  sr_ethernet_hdr_t *eHdr = (sr_ethernet_hdr_t *) packet;
-    
-  printf("*** -> Perform validation on the packet.\n");
-
-  if (eHdr->ether_type == htons(ethertype_arp)) {
-    printf("**** -> Validate ARP packet.\n");
-    cumulative_sz += sizeof(sr_arp_hdr_t);
-    if (len >= cumulative_sz) {
-       printf("***** -> Invalid packet length.\n");
-       return 1;
-    }
-    printf("***** -> Packet length is correct.\n");
-
-  } else if (eHdr->ether_type == htons(ethertype_ip)) {
-    printf("**** -> Validate IP packet.\n");
-    sr_ip_hdr_t *ipHdr = (sr_ip_hdr_t *) (packet + cumulative_sz);
-    cumulative_sz += sizeof(sr_ip_hdr_t);
-
-    if (len >= cumulative_sz) {
-      printf("***** -> Packet length is correct.\n");
-      if (ip_cksum(ipHdr, sizeof(sr_ip_hdr_t)) == ipHdr->ip_sum) {
-        printf("***** -> IP packet checksum is correct.\n");
-        if (ipHdr->ip_p == ip_protocol_icmp) {
-          printf("***** -> IP packet is ICMP packet. Validate ICMP packet.\n");
-          int icmpOffset = cumulative_sz;
-          sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *) (packet + cumulative_sz);
-          cumulative_sz += sizeof(sr_icmp_hdr_t);
-
-          if (len >= cumulative_sz) {
-            printf("****** -> Packet length is correct.\n");
-            if (icmp_cksum(icmpHdr, len - icmpOffset) == icmpHdr->icmp_sum) {
-              printf("****** -> ICMP packet checksum is correct.\n");
-              return 1;
-            }
-          }
-        } else {
-          /* TODO */
-          printf("***** -> IP packet is of unknown protocol. No further validation is required.\n");
-	  return 1;
-        }
-      }
-    }
-  }
-
-  printf("*** -> Packet validation complete. Packet is valid.\n");
-  return 0;
-}
-
 /* Helper function for sr_arp_request_send to generate
    broadcast MAC address. */ 
 uint8_t *generate_ethernet_addr(uint8_t x) {

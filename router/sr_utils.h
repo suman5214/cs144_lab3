@@ -29,7 +29,6 @@
 #define SR_UTILS_H
 
 uint16_t cksum(const void *_data, int len);
-int is_packet_valid(uint8_t *, unsigned int);
 uint8_t *generate_ethernet_addr(uint8_t);
 
 uint16_t ethertype(uint8_t *buf);
