@@ -68,13 +68,6 @@ void sr_init(struct sr_instance *sr)
  *
  *---------------------------------------------------------------------*/
 void sr_arp_request_send(struct sr_instance *sr, uint32_t ip){
-  uint8_t *mac_addr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-  mac_addr[0] = 255;
-  mac_addr[1] = 255;
-  mac_addr[2] = 255;
-  mac_addr[3] = 255;
-  mac_addr[4] = 255;
-  mac_addr[5] = 255;
   printf("$$$ -> Send ARP request.\n");
 
   int arpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
@@ -111,17 +104,6 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip){
     currIf = currIf->next;
   }
   printf("$$$ -> Send ARP request processing complete.\n");
-}
-
-uint32_t ip_cksum (sr_ip_hdr_t *ipHdr, int len) {
-  uint16_t currChksum, calcChksum;
-
-  currChksum = ipHdr->ip_sum; 
-  ipHdr->ip_sum = 0;
-  calcChksum = cksum(ipHdr, len);
-  ipHdr->ip_sum = currChksum;    
-
-  return calcChksum;
 }
 
  struct sr_if* get_IP(struct sr_instance* sr, uint32_t ip)
@@ -189,11 +171,10 @@ void send_icmp_packet(struct sr_instance *sr,
         /*Set icmp header*/
         icmp_hdr->icmp_type = 0;
         icmp_hdr->icmp_code = 0;
-        icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_hdr_t));
+        icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, sizeof(sr_icmp_hdr_t));
         /*Set ip header*/
         ip_hdr->ip_dst = ip_hdr->ip_src;
         ip_hdr->ip_src = Iface->ip;
-        
         ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
 
         memcpy(eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN); 
@@ -233,7 +214,7 @@ void send_icmp_packet(struct sr_instance *sr,
     ip_hdr->ip_p = ip_protocol_icmp;
     
     
-    icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t)); 
+    icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t)); 
 
     struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, sender_add);
     if (!longest_matching_entry)
@@ -247,7 +228,7 @@ void send_icmp_packet(struct sr_instance *sr,
       
       if (arp_req)
       {
-        ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+        ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
         ip_hdr->ip_src = iFace->ip;
         memcpy(eth_hdr->ether_dhost, arp_req->mac, ETHER_ADDR_LEN);
         memcpy(eth_hdr->ether_shost, iFace->addr, ETHER_ADDR_LEN); 
@@ -255,7 +236,7 @@ void send_icmp_packet(struct sr_instance *sr,
       }
       else
       {
-        ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+        ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
         ip_hdr->ip_src = iFace->ip;
         struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),lmp_addr,packet,sizeof(packet),iFace->name);
         handle_arpreq(sr, arpReq);
@@ -359,7 +340,7 @@ void handle_IP(struct sr_instance *sr,
     ip_hdr->ip_ttl = ip_hdr->ip_ttl - 1 ; 
     if (ip_hdr->ip_ttl > 0)
     {
-      ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+      ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
       struct sr_arpentry *arp_request = sr_arpcache_lookup(&sr->cache, longest_matching_entry->gw.s_addr);
 
       if (arp_request)
