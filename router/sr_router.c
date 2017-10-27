@@ -103,11 +103,11 @@ struct sr_if *myInterface = sr_get_interface(sr, interface);
 
 icmpHdr->icmp_type = 0;
 icmpHdr->icmp_code = 0;
-icmpHdr->icmp_sum = icmp_cksum(icmpHdr, len - icmpOffset);
+icmpHdr->icmp_sum = cksum(icmpHdr, len - icmpOffset);
 
 ipHdr->ip_dst = ipHdr->ip_src;
 ipHdr->ip_src = myInterface->ip;
-ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
+ipHdr->ip_sum = cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
 uint8_t *destAddr = malloc(ETHER_ADDR_LEN);
 uint8_t *srcAddr = malloc(ETHER_ADDR_LEN);
@@ -239,7 +239,7 @@ void sr_send_icmp_error_packet(uint8_t type,
     struct sr_if *interface = sr_get_interface(sr, longest_matching_entry->interface);
 
     ipHdr->ip_src = interface->ip;
-    ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
+    ipHdr->ip_sum = cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
     struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), longest_matching_entry->gw.s_addr);
     if (arpEntry != NULL)
@@ -398,7 +398,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
     }
     else
     {
-      ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t)); /* recompute checksum */
+      ipHdr->ip_sum = cksum(ipHdr, sizeof(sr_ip_hdr_t)); /* recompute checksum */
       struct sr_arpentry *arp_request = sr_arpcache_lookup(&sr->cache, longest_matching_entry->gw.s_addr);
 
       if (arp_request)
