@@ -142,7 +142,7 @@ struct sr_if *curIFACE = sr_get_interface(sr, interface);
 
 icmpHdr->icmp_type = 0;
 icmpHdr->icmp_code = 0;
-icmpHdr->icmp_sum = icmp_cksum(icmpHdr, sizeof(sr_icmp_hdr_t));
+icmpHdr->icmp_sum = cksum(icmpHdr, sizeof(sr_icmp_hdr_t));
 
 ip_hdr->ip_dst = ip_hdr->ip_src;
 ip_hdr->ip_src = curIFACE->ip;
