@@ -40,19 +40,21 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
     {
         if (req->times_sent < 5)
         {
+            uint8_t *mac_addr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
+            
+                        mac_addr[0] = 255;
+                        mac_addr[1] = 255;
+                        mac_addr[2] = 255;
+                        mac_addr[3] = 255;
+                        mac_addr[4] = 255;
+                        mac_addr[5] = 255;
+                        
             int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
             uint8_t *arp_req = malloc(len); 
             struct sr_if *iFace = sr->if_list;
             sr_ethernet_hdr_t *eth_hdr = (struct sr_ethernet_hdr *)arp_req;
             memcpy(eth_hdr->ether_dhost, mac_addr, ETHER_ADDR_LEN);
-            uint8_t *mac_addr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
 
-            mac_addr[0] = 255;
-            mac_addr[1] = 255;
-            mac_addr[2] = 255;
-            mac_addr[3] = 255;
-            mac_addr[4] = 255;
-            mac_addr[5] = 255;
                               
               while (iFace)
               {            
