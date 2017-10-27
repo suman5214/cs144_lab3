@@ -169,24 +169,21 @@ void send_icmp_packet(struct sr_instance *sr,
         sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(icmp_packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
         sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)icmp_packet;
         struct sr_ip_hdr *ip_hdr = (struct sr_ip_hdr *)(icmp_packet + sizeof(sr_ethernet_hdr_t));
-
-        uint8_t *destAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-        uint8_t *srcAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-        memcpy(destAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-        memcpy(srcAddr, eth_hdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-        
-        struct sr_if *myInterface = sr_get_interface(sr, interface);
+        struct sr_if *Iface = sr_get_interface(sr, interface);
         
         icmpHdr->icmp_type = 0;
         icmpHdr->icmp_code = 0;
-        icmpHdr->icmp_sum = icmp_cksum(icmpHdr, sizeof(sr_icmp_hdr_t));
+        icmpHdr->icmp_sum = cksum(icmpHdr, sizeof(sr_icmp_hdr_t));
         
         ip_hdr->ip_dst = ip_hdr->ip_src;
-        ip_hdr->ip_src = myInterface->ip;
-        ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
-        
-        memcpy(eth_hdr->ether_dhost, srcAddr, sizeof(uint8_t) * ETHER_ADDR_LEN); 
-        memcpy(eth_hdr->ether_shost, destAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
+        ip_hdr->ip_src = Iface->ip;
+        ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+
+        uint8_t *tempAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
+        memcpy(tempAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+
+        memcpy(eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN); 
+        memcpy(eth_hdr->ether_shost, tempAddr, ETHER_ADDR_LEN);
         
         sr_send_packet(sr, icmp_packet, len, interface);
         
