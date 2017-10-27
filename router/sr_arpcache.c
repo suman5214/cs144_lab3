@@ -52,29 +52,28 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
               uint8_t *arpPacket = malloc(arpPacketLen);
             
               sr_ethernet_hdr_t *eth_hdr = (struct sr_ethernet_hdr *)arpPacket;
-              memcpy(eth_hdr->ether_dhost, mac_addr, ETHER_ADDR_LEN);
+              memcpy(eth_hdr->ether_dhost, 0xFF, ETHER_ADDR_LEN);
             
               struct sr_if *currIf = sr->if_list;
               uint8_t *copyPacket;
-              while (currIf != NULL)
+              while (currIf)
               {            
                 memcpy(eth_hdr->ether_shost, (uint8_t *)currIf->addr, ETHER_ADDR_LEN);
                 eth_hdr->ether_type = htons(ethertype_arp);
             
                 sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(arpPacket + sizeof(sr_ethernet_hdr_t));
-                apr_hdr->ar_hrd = htons(1);
-                apr_hdr->ar_pro = htons(2048);
+                apr_hdr->ar_hrd = (unsigned short)htons(arp_hrd_ethernet);
+                apr_hdr->ar_pro = (unsigned short)htons(ethertype_ip);
                 apr_hdr->ar_hln = 6;
-                apr_hdr->ar_pln = 4;
-                apr_hdr->ar_op = htons(arp_op_request);
+                apr_hdr->ar_pln = (unsigned char)sizeof(uint32_t);
+                apr_hdr->ar_op = (unsigned short)htons(arp_op_request);
                 memcpy(apr_hdr->ar_sha, currIf->addr, ETHER_ADDR_LEN);
-                memcpy(apr_hdr->ar_tha, (char *)mac_addr, ETHER_ADDR_LEN);
                 apr_hdr->ar_sip = currIf->ip;
+                memcpy(apr_hdr->ar_tha, 0x00, ETHER_ADDR_LEN);
                 apr_hdr->ar_tip = req->ip;
             
                 copyPacket = malloc(arpPacketLen);
                 memcpy(copyPacket, eth_hdr, arpPacketLen);
-                print_hdrs(copyPacket, arpPacketLen);
                 sr_send_packet(sr, copyPacket, arpPacketLen, currIf->name);
             
                 currIf = currIf->next;
