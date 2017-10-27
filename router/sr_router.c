@@ -142,7 +142,7 @@ struct sr_if *myInterface = sr_get_interface(sr, interface);
 
 icmpHdr->icmp_type = 0;
 icmpHdr->icmp_code = 0;
-icmpHdr->icmp_sum = cksum(icmpHdr, len - icmpOffset);
+icmpHdr->icmp_sum = cksum(icmpHdr, sizeof(sr_icmp_t3_hdr_t));
 
 ipHdr->ip_dst = ipHdr->ip_src;
 ipHdr->ip_src = myInterface->ip;
