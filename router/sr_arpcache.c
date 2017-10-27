@@ -17,76 +17,7 @@
   See the comments in the header file for an idea of what it should look like.
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
-   struct sr_arpreq *currReq = sr->cache.requests;
-   while (currReq)
-   {
-        struct sr_arpreq *temp = currReq->next;
-        handle_arp_req(sr, currReq);
-       currReq = temp;
-   }
-}
-
-void handle_arp_req(struct sr_instance *sr, struct sr_arpreq *req)
-{
-    time_t t;
-    time(&t);
-
-    if (difftime(t, req->sent) >= 1.0)
-    {
-        if (req->times_sent < 5)
-        {
-            uint8_t *mac_addr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-            
-                        mac_addr[0] = 255;
-                        mac_addr[1] = 255;
-                        mac_addr[2] = 255;
-                        mac_addr[3] = 255;
-                        mac_addr[4] = 255;
-                        mac_addr[5] = 255;
-
-            int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
-            uint8_t *arp_req = malloc(len); 
-            struct sr_if *iFace = sr->if_list;
-            sr_ethernet_hdr_t *eth_hdr = (struct sr_ethernet_hdr *)arp_req;
-            memcpy(eth_hdr->ether_dhost, mac_addr, ETHER_ADDR_LEN);
-
-                              
-              while (iFace)
-              {            
-                sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(arp_req + sizeof(sr_ethernet_hdr_t));
-                memcpy(eth_hdr->ether_shost, (uint8_t *)iFace->addr, ETHER_ADDR_LEN);
-                memcpy(apr_hdr->ar_sha, iFace->addr, ETHER_ADDR_LEN);
-                memcpy(apr_hdr->ar_tha, (char *)mac_addr, ETHER_ADDR_LEN);
-                eth_hdr->ether_type = htons(ethertype_arp); 
-                apr_hdr->ar_hrd = htons(arp_hrd_ethernet);
-                apr_hdr->ar_pro = htons(ethertype_ip);
-                apr_hdr->ar_hln = ETHER_ADDR_LEN;
-                apr_hdr->ar_pln = 4;
-                apr_hdr->ar_op = htons(arp_op_request);
-
-                apr_hdr->ar_sip = iFace->ip;
-                apr_hdr->ar_tip = req->ip;
-            
-                sr_send_packet(sr, arp_req, len, iFace->name);
-            
-                iFace = iFace->next;
-              }
-
-            req->sent = t;
-            req->times_sent = req->times_sent + 1;
-        }
-        else
-        {
-            struct sr_packet *packet = req->packets;
-            
-                sr_ip_hdr_t *ip_hdr =  ((sr_ip_hdr_t*) (packet->buf + sizeof(sr_ethernet_hdr_t)));
-                while (packet) {
-                    send_icmp_packet(sr,ip_hdr->ip_src,ip_hdr,3, 1,0,0);
-                    packet = packet->next;
-                }
-            sr_arpreq_destroy(&(sr->cache), req);
-        }
-    }
+    /* Fill this in */
 }
 
 /* You should not need to touch the rest of this code. */
