@@ -68,13 +68,20 @@ void sr_init(struct sr_instance *sr)
  *
  *---------------------------------------------------------------------*/
 void sr_arp_request_send(struct sr_instance *sr, uint32_t ip){
+  uint8_t *mac_addr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
+  mac_addr[0] = 255;
+  mac_addr[1] = 255;
+  mac_addr[2] = 255;
+  mac_addr[3] = 255;
+  mac_addr[4] = 255;
+  mac_addr[5] = 255;
   printf("$$$ -> Send ARP request.\n");
 
   int arpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
   uint8_t *arpPacket = malloc(arpPacketLen);
 
   sr_ethernet_hdr_t *eth_hdr = (struct sr_ethernet_hdr *)arpPacket;
-  memcpy(eth_hdr->ether_dhost, generate_ethernet_addr(255), ETHER_ADDR_LEN);
+  memcpy(eth_hdr->ether_dhost, mac_addr, ETHER_ADDR_LEN);
 
   struct sr_if *currIf = sr->if_list;
   uint8_t *copyPacket;
@@ -92,7 +99,7 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip){
     apr_hdr->ar_pln = 4;
     apr_hdr->ar_op = htons(arp_op_request);
     memcpy(apr_hdr->ar_sha, currIf->addr, ETHER_ADDR_LEN);
-    memcpy(apr_hdr->ar_tha, (char *)generate_ethernet_addr(0), ETHER_ADDR_LEN);
+    memcpy(apr_hdr->ar_tha, (char *)mac_addr, ETHER_ADDR_LEN);
     apr_hdr->ar_sip = currIf->ip;
     apr_hdr->ar_tip = ip;
 
