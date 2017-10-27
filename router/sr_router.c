@@ -273,26 +273,20 @@ void sr_handle_arp_packet(struct sr_instance *sr,
                           char *iFace)
 {
 
-  printf("*** -> It is an ARP packet. Print ARP header.\n");
+  printf("This is a ARP packet\n");
 
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
   sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
-
-
-  struct sr_arpentry *cached = sr_arpcache_lookup(&(sr->cache), apr_hdr->ar_sip);
   struct sr_if *myInterface = sr_get_interface_given_ip(sr, apr_hdr->ar_tip);
 
   if (ntohs(apr_hdr->ar_op) == arp_op_request)
   {
-    printf("**** -> It is an ARP request.\n");
+    printf("This is a ARP request.\n");
 
     if (myInterface != 0)
     {
-      printf("***** -> ARP request is for one of my interfaces.\n");
-
-      printf("****** -> Construct an ARP reply and send it back.\n");
-
+      /* Construct ARP packet*/
       memcpy(eth_hdr->ether_shost, myInterface->addr, ETHER_ADDR_LEN);
       memcpy(eth_hdr->ether_dhost, apr_hdr->ar_sha, ETHER_ADDR_LEN);
 
@@ -309,7 +303,6 @@ void sr_handle_arp_packet(struct sr_instance *sr,
       apr_hdr->ar_op = htons(arp_op_reply);
       sr_send_packet(sr, packet, len, myInterface->name);
     }
-    printf("ARP request processing complete.\n");
   }
   else if (ntohs(apr_hdr->ar_op) == arp_op_reply)
   {
@@ -334,7 +327,6 @@ void sr_handle_arp_packet(struct sr_instance *sr,
       }
       sr_arpreq_destroy(&(sr->cache), arpReq);
     }
-    printf("******* -> ARP reply processing complete.\n");
   }
   else{
     printf("Not valid ARP OP CODE\n");
