@@ -146,7 +146,7 @@ void sr_handlepacket(struct sr_instance *sr,
     }
     else if (pktType == ethertype_ip)
     {
-      sr_handle_ip_packet(sr, packet, len, srcAddr, destAddr, interface, eth_hdr);
+      sr_handle_ip_packet(sr, packet, len, interface);
     }
   }
 } 
@@ -343,11 +343,14 @@ void sr_handle_arp_packet(struct sr_instance *sr,
 void sr_handle_ip_packet(struct sr_instance *sr,
                          uint8_t *packet /* lent */,
                          unsigned int len,
-                         uint8_t *srcAddr,
-                         uint8_t *destAddr,
-                         char *interface /* lent */,
-                         sr_ethernet_hdr_t *eth_hdr)
+                         char *interface )
 {
+  
+  sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
+  uint8_t *destAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
+  uint8_t *srcAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
+  memcpy(destAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+  memcpy(srcAddr, eth_hdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
 
   printf("*** -> It is an IP packet. Print IP header.\n");
 
@@ -418,8 +421,8 @@ void sr_handle_ip_packet(struct sr_instance *sr,
       {
         printf("******** -> No next-hop-IP to MAC mapping found in ARP cache. Send ARP request to find it.\n");
 
-        struct sr_arpreq *nextHopIPArpReq = sr_arpcache_queuereq(&(sr->cache), longest_matching_entry->gw.s_addr, packet, len, &(longest_matching_entry->interface));
-        handle_arpreq(sr, nextHopIPArpReq);
+        struct sr_arpreq *req = sr_arpcache_queuereq(&(sr->cache), longest_matching_entry->gw.s_addr, packet, len, &(longest_matching_entry->interface));
+        handle_arpreq(sr, req);
       }
     }
   }
