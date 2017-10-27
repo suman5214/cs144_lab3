@@ -48,7 +48,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
                         mac_addr[3] = 255;
                         mac_addr[4] = 255;
                         mac_addr[5] = 255;
-                        
+
             int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
             uint8_t *arp_req = malloc(len); 
             struct sr_if *iFace = sr->if_list;
@@ -92,31 +92,6 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
             sr_arpreq_destroy(&(sr->cache), req);
         }
     }
-}
-
-/* Checks if an IP->MAC mapping is in the cache. If it is, it "refreshes" the
-   the respective entry and returns 1. If it isn't, it does nothing, and
-   returns 0. IP is in network byte order. */
-int sr_arpcache_entry_update(struct sr_arpcache *cache, uint32_t ip) {
-     pthread_mutex_lock(&(cache->lock));
-     struct sr_arpentry *entry = NULL;
-     int i;
-
-     for (i = 0; i < SR_ARPCACHE_SZ; i++) {
-         if ((cache->entries[i].valid) && (cache->entries[i].ip == ip)) {
-             entry = &(cache->entries[i]);
-             break;
-         }
-     }
- 
-     if (entry != NULL) {
-         entry->added = time(NULL);
-         pthread_mutex_unlock(&(cache->lock));
-         return 1;
-     } else {
-         pthread_mutex_unlock(&(cache->lock));
-         return 0;
-     }
 }
 
 /* You should not need to touch the rest of this code. */
