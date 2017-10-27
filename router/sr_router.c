@@ -349,29 +349,17 @@ void sr_handle_ip_packet(struct sr_instance *sr,
 
   if (curIFACE)
   {
-    printf("***** -> IP packet is for one of my interfaces.\n");
+    sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
-    if (ipProtocol == ip_protocol_icmp)
+    if (icmpHdr->icmp_type == 8)
     {
-      printf("****** -> It is an ICMP packet. Print ICMP header.\n");
-
-
-      sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-
-      if (icmpHdr->icmp_type == 8)
-      {
-        printf("******** -> It is an ICMP echo request. Send ICMP echo reply.\n");
-        icmp_direct_echo_reply(sr, packet, len, interface, eth_hdr, ip_hdr, icmpHdr);
-        printf("********* -> ICMP echo request processing complete.\n");
-      }
+      icmp_direct_echo_reply(sr, packet, len, interface, eth_hdr, ip_hdr, icmpHdr);
     }
     else
     {
-      printf("****** -> IP packet is not an ICMP packet. Send ICMP port unreachable.\n");
       sr_send_icmp_error_packet(3, 3, sr, ip_hdr->ip_src, (uint8_t *)ip_hdr);
     }
 
-    printf("********* -> IP packet processing complete.\n");
   }
   else
   {
@@ -392,8 +380,6 @@ void sr_handle_ip_packet(struct sr_instance *sr,
       }
       else
       {
-        printf("******** -> No next-hop-IP to MAC mapping found in ARP cache. Send ARP request to find it.\n");
-
         struct sr_arpreq *req = sr_arpcache_queuereq(&(sr->cache), longest_matching_entry->gw.s_addr, packet, len, &(longest_matching_entry->interface));
         handle_arpreq(sr, req);
       }
