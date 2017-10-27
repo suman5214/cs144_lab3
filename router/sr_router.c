@@ -178,7 +178,7 @@ void send_icmp_packet(struct sr_instance *sr,
 
         uint16_t currChksum, calcChksum;
         currChksum = ipHdr->ip_sum; 
-        pHdr->ip_sum = 0;
+        ipHdr->ip_sum = 0;
         calcChksum = cksum(ipHdr, len);
         ipHdr->ip_sum = calcChksum;
 
