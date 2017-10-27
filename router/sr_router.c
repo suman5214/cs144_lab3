@@ -136,24 +136,19 @@ void sr_handlepacket(struct sr_instance *sr,
   assert(packet);
   assert(interface);
 
-  printf("** -> Received packet of length \n");
   print_hdr_eth(packet);
 
-  sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
-
-  uint16_t pktType = ntohs(eth_hdr->ether_type);
-
-    if (pktType == ethertype_arp)
+    if (ethertype(packet) == ethertype_arp)
     {
-      sr_handle_arp_packet(sr, packet, len, interface);
+      printf("This is a ARP packet \n");
+      handle_ARP(sr, packet, len, interface);
     }
-    else if (pktType == ethertype_ip)
+    else if (ethertype(packet) == ethertype_ip)
     {
-      sr_handle_ip_packet(sr, packet, len, interface);
+      printf("This is a IP packet \n");
+      handle_IP(sr, packet, len, interface);
     }
 }  
-
-
 
 void send_icmp_packet(struct sr_instance *sr,
                                uint32_t sender_add,
@@ -185,9 +180,6 @@ void send_icmp_packet(struct sr_instance *sr,
         memcpy(eth_hdr->ether_shost, tempAddr, ETHER_ADDR_LEN);
         
         sr_send_packet(sr, icmp_packet, len, interface);
-        
-        
-        
   }
   else{
     uint8_t *packet = malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t));
@@ -252,7 +244,7 @@ void send_icmp_packet(struct sr_instance *sr,
 }
 
 
-void sr_handle_arp_packet(struct sr_instance *sr,
+void handle_ARP(struct sr_instance *sr,
                           uint8_t *packet ,
                           unsigned int len,
                           char *iFace)
@@ -314,7 +306,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
   }
 }
 
-void sr_handle_ip_packet(struct sr_instance *sr,
+void handle_IP(struct sr_instance *sr,
                          uint8_t *packet /* lent */,
                          unsigned int len,
                          char *interface )
