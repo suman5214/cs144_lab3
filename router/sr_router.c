@@ -199,16 +199,12 @@ void sr_send_icmp_error_packet(uint8_t type,
 {
 
   printf("### -> Send ICMP error.\n");
-  /* packet initialization */
+
   unsigned int icmpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
   uint8_t *packet = malloc(icmpPacketLen);
-
-  /* packet headers */
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
   sr_ip_hdr_t *ipHdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
   sr_icmp_t3_hdr_t *icmp3Hdr = (sr_icmp_t3_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-
-  /* initialize ethernet header */
 
   eth_hdr->ether_type = htons(ethertype_ip);
   memset(eth_hdr->ether_dhost, 0, ETHER_ADDR_LEN);
@@ -230,7 +226,7 @@ void sr_send_icmp_error_packet(uint8_t type,
   
   memcpy(icmp3Hdr->data, ipPacket, ICMP_DATA_SIZE);
 
-  icmp3Hdr->icmp_sum = icmp3_cksum(icmp3Hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
+  icmp3Hdr->icmp_sum = cksum(icmp3Hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
 
   printf("### -> Check routing table, perform LPM.\n");
   struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ipDst);
