@@ -20,7 +20,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
    struct sr_arpreq *currReq = sr->cache.requests;
    while (currReq)
    {
-        struct sr_arpreq temp = currReq->next;
+        struct sr_arpreq *temp = currReq->next;
         handle_arp_req(sr, currReq);
        currReq = temp;
    }
