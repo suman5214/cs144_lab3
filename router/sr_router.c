@@ -108,28 +108,29 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip){
 
  struct sr_if* sr_get_interface_given_ip(struct sr_instance* sr, uint32_t ip)
 {
-    struct sr_if* if_walker = 0;
-
     /* -- REQUIRES -- */
     assert(ip);
     assert(sr);
 
-    if_walker = sr->if_list;
+    struct sr_if* iFace = sr->if_list;
 
-    while(if_walker)
+    while(iFace)
     {
-       if(if_walker->ip == ip)
-        { return if_walker; }
-        if_walker = if_walker->next;
+       if(iFace->ip != ip)
+        { 
+          iFace = iFace->next; 
+        }
+      else{
+        return iFace; 
+      }
     }
-
     return 0;
 }
 
 void sr_handlepacket(struct sr_instance *sr,
-                     uint8_t *packet /* lent */,
+                     uint8_t *packet,
                      unsigned int len,
-                     char *interface /* lent */)
+                     char *interface )
 {
   /* REQUIRES */
   assert(sr);
