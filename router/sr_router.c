@@ -173,11 +173,11 @@ void send_icmp_packet(struct sr_instance *sr,
         
         icmpHdr->icmp_type = 0;
         icmpHdr->icmp_code = 0;
-        icmpHdr->icmp_sum = cksum(icmpHdr, sizeof(sr_icmp_hdr_t));
+        icmpHdr->icmp_sum = icmp_cksum(icmpHdr, sizeof(sr_icmp_hdr_t));
         
         ip_hdr->ip_dst = ip_hdr->ip_src;
         ip_hdr->ip_src = Iface->ip;
-        ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+        ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
 
         uint8_t *tempAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
         memcpy(tempAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
