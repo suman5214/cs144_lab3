@@ -188,7 +188,7 @@ void send_icmp_packet(struct sr_instance *sr,
         memcpy(eth_hdr->ether_dhost, srcAddr, sizeof(uint8_t) * ETHER_ADDR_LEN); 
         memcpy(eth_hdr->ether_shost, destAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
         
-        sr_send_packet(sr, packet, len, interface);
+        sr_send_packet(sr, icmp_packet, len, interface);
         
         
         
