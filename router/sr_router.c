@@ -67,6 +67,90 @@ void sr_init(struct sr_instance *sr)
  * the method call.
  *
  *---------------------------------------------------------------------*/
+struct sr_if* sr_get_interface_given_ip(struct sr_instance* sr, uint32_t ip)
+{
+    struct sr_if* if_walker = 0;
+
+    /* -- REQUIRES -- */
+    assert(ip);
+    assert(sr);
+
+    if_walker = sr->if_list;
+
+    while(if_walker)
+    {
+       if(if_walker->ip == ip)
+        { return if_walker; }
+        if_walker = if_walker->next;
+    }
+
+    return 0;
+}
+
+void icmp_direct_echo_reply(struct sr_instance *sr,
+  uint8_t *packet /* lent */,
+  unsigned int len,
+  char *interface /* lent */,
+  sr_ethernet_hdr_t *eth_hdr,
+  sr_ip_hdr_t *ipHdr,
+  sr_icmp_hdr_t *icmpHdr)
+{
+
+int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
+
+/* We don't have to look up the routing table for this one */
+struct sr_if *myInterface = sr_get_interface(sr, interface);
+
+icmpHdr->icmp_type = 0;
+icmpHdr->icmp_code = 0;
+icmpHdr->icmp_sum = icmp_cksum(icmpHdr, len - icmpOffset);
+
+ipHdr->ip_dst = ipHdr->ip_src;
+ipHdr->ip_src = myInterface->ip;
+ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
+
+uint8_t *destAddr = malloc(ETHER_ADDR_LEN);
+uint8_t *srcAddr = malloc(ETHER_ADDR_LEN);
+memcpy(destAddr, eth_hdr->ether_dhost, ETHER_ADDR_LEN);
+memcpy(srcAddr, eth_hdr->ether_shost, ETHER_ADDR_LEN);
+
+memcpy(eth_hdr->ether_dhost, srcAddr, ETHER_ADDR_LEN);
+memcpy(eth_hdr->ether_shost, destAddr, ETHER_ADDR_LEN);
+
+print_hdrs(packet, len);
+sr_send_packet(sr, packet, len, interface);
+}
+
+void sr_handlepacket(struct sr_instance *sr,
+                     uint8_t *packet /* lent */,
+                     unsigned int len,
+                     char *interface /* lent */)
+{
+  /* REQUIRES */
+  assert(sr);
+  assert(packet);
+  assert(interface);
+
+  printf("** -> Received packet of length \n");
+  print_hdr_eth(packet);
+
+  sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
+
+  uint16_t pktType = ntohs(eth_hdr->ether_type);
+
+  if (is_packet_valid(packet, len))
+  {
+    if (pktType == ethertype_arp)
+    {
+      sr_handle_arp_packet(sr, packet, len, interface);
+    }
+    else if (pktType == ethertype_ip)
+    {
+      sr_handle_ip_packet(sr, packet, len, interface);
+    }
+  }
+} 
+
 void sr_arp_request_send(struct sr_instance *sr, uint32_t ip){
   printf("$$$ -> Send ARP request.\n");
 
@@ -106,90 +190,6 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip){
   printf("$$$ -> Send ARP request processing complete.\n");
 }
 
- struct sr_if* sr_get_interface_given_ip(struct sr_instance* sr, uint32_t ip)
-{
-    struct sr_if* if_walker = 0;
-
-    /* -- REQUIRES -- */
-    assert(ip);
-    assert(sr);
-
-    if_walker = sr->if_list;
-
-    while(if_walker)
-    {
-       if(if_walker->ip == ip)
-        { return if_walker; }
-        if_walker = if_walker->next;
-    }
-
-    return 0;
-}
-
-void icmp_direct_echo_reply(struct sr_instance *sr,
-  uint8_t *packet /* lent */,
-  unsigned int len,
-  char *interface /* lent */,
-  sr_ethernet_hdr_t *eth_hdr,
-  sr_ip_hdr_t *ipHdr,
-  sr_icmp_hdr_t *icmpHdr)
-{
-
-int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
-
-/* We don't have to look up the routing table for this one */
-struct sr_if *myInterface = sr_get_interface(sr, interface);
-
-icmpHdr->icmp_type = 0;
-icmpHdr->icmp_code = 0;
-icmpHdr->icmp_sum = cksum(icmpHdr, len - icmpOffset);
-
-ipHdr->ip_dst = ipHdr->ip_src;
-ipHdr->ip_src = myInterface->ip;
-ipHdr->ip_sum = cksum(ipHdr, sizeof(sr_ip_hdr_t));
-
-uint8_t *destAddr = malloc(ETHER_ADDR_LEN);
-uint8_t *srcAddr = malloc(ETHER_ADDR_LEN);
-memcpy(destAddr, eth_hdr->ether_dhost, ETHER_ADDR_LEN);
-memcpy(srcAddr, eth_hdr->ether_shost, ETHER_ADDR_LEN);
-
-memcpy(eth_hdr->ether_dhost, srcAddr, ETHER_ADDR_LEN);
-memcpy(eth_hdr->ether_shost, destAddr, ETHER_ADDR_LEN);
-
-print_hdrs(packet, len);
-sr_send_packet(sr, packet, len, interface);
-}
-
-void sr_handlepacket(struct sr_instance *sr,
-                     uint8_t *packet /* lent */,
-                     unsigned int len,
-                     char *interface /* lent */)
-{
-  /* REQUIRES */
-  assert(sr);
-  assert(packet);
-  assert(interface);
-
-  printf("** -> Received packet of length \n");
-  print_hdr_eth(packet);
-
-  sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
-
-  uint16_t pktType = ntohs(eth_hdr->ether_type);
-
-
-    if (pktType == ethertype_arp)
-    {
-      sr_handle_arp_packet(sr, packet, len, interface);
-    }
-    else if (pktType == ethertype_ip)
-    {
-      sr_handle_ip_packet(sr, packet, len, interface);
-    }
-} 
-
-
-
 /* Send an ICMP error. */
 void sr_send_icmp_error_packet(uint8_t type,
                                uint8_t code,
@@ -199,12 +199,16 @@ void sr_send_icmp_error_packet(uint8_t type,
 {
 
   printf("### -> Send ICMP error.\n");
-
+  /* packet initialization */
   unsigned int icmpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
   uint8_t *packet = malloc(icmpPacketLen);
+
+  /* packet headers */
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
   sr_ip_hdr_t *ipHdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
   sr_icmp_t3_hdr_t *icmp3Hdr = (sr_icmp_t3_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+  /* initialize ethernet header */
 
   eth_hdr->ether_type = htons(ethertype_ip);
   memset(eth_hdr->ether_dhost, 0, ETHER_ADDR_LEN);
@@ -226,33 +230,31 @@ void sr_send_icmp_error_packet(uint8_t type,
   
   memcpy(icmp3Hdr->data, ipPacket, ICMP_DATA_SIZE);
 
-  icmp3Hdr->icmp_sum = cksum(icmp3Hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
+  icmp3Hdr->icmp_sum = icmp3_cksum(icmp3Hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
 
   printf("### -> Check routing table, perform LPM.\n");
   struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ipDst);
-  if (!longest_matching_entry)
+  if (longest_matching_entry)
   {
-    printf("there is no match in the table");
-    return;
-  }
+    printf("#### -> Match found in routing table. Check ARP cache.\n");
 
     struct sr_if *interface = sr_get_interface(sr, longest_matching_entry->interface);
 
     ipHdr->ip_src = interface->ip;
-    ipHdr->ip_sum = cksum(ipHdr, sizeof(sr_ip_hdr_t));
+    ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
+    
     struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), longest_matching_entry->gw.s_addr);
     if (arpEntry != NULL)
     {
       printf("##### -> Next-hop-IP to MAC mapping found in ARP cache. Forward packet to next hop.\n");
-      
       memcpy(eth_hdr->ether_shost, interface->addr, ETHER_ADDR_LEN);
       memcpy(eth_hdr->ether_dhost, arpEntry->mac, ETHER_ADDR_LEN);
       sr_send_packet(sr, packet, icmpPacketLen, interface->name);
     }
     else
     {
-      memcpy(eth_hdr->ether_shost, interface->addr, ETHER_ADDR_LEN);
+      printf("##### -> No next-hop-IP to MAC mapping found in ARP cache. Send ARP request to find it.\n");
       struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),
                                                       longest_matching_entry->gw.s_addr,
                                                       packet,
@@ -260,7 +262,7 @@ void sr_send_icmp_error_packet(uint8_t type,
                                                       &(interface->name));
       handle_arpreq(sr, arpReq);
     }
-
+  }
 }
 
 
@@ -398,7 +400,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
     }
     else
     {
-      ipHdr->ip_sum = cksum(ipHdr, sizeof(sr_ip_hdr_t)); /* recompute checksum */
+      ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t)); /* recompute checksum */
       struct sr_arpentry *arp_request = sr_arpcache_lookup(&sr->cache, longest_matching_entry->gw.s_addr);
 
       if (arp_request)
