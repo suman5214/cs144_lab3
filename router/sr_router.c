@@ -175,7 +175,7 @@ void send_icmp_packet(struct sr_instance *sr,
         /*Set ip header*/
         ip_hdr->ip_dst = ip_hdr->ip_src;
         ip_hdr->ip_src = Iface->ip;
-        ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+        ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
 
         memcpy(eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN); 
         memcpy(eth_hdr->ether_shost, tempAddr, ETHER_ADDR_LEN);
@@ -340,7 +340,7 @@ void handle_IP(struct sr_instance *sr,
     ip_hdr->ip_ttl = ip_hdr->ip_ttl - 1 ; 
     if (ip_hdr->ip_ttl > 0)
     {
-      ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+      ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
       struct sr_arpentry *arp_request = sr_arpcache_lookup(&sr->cache, longest_matching_entry->gw.s_addr);
 
       if (arp_request)
