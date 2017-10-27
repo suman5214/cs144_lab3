@@ -237,7 +237,7 @@ void sr_send_icmp_error_packet(uint8_t type,
   if (!longest_matching_entry)
   {
     printf("there is no match in the table");
-    return
+    return;
   }
 
     struct sr_if *interface = sr_get_interface(sr, longest_matching_entry->interface);
