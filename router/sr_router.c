@@ -234,9 +234,9 @@ void send_icmp_packet(struct sr_instance *sr,
     printf("No MAC->IP record in talbe\n");
     return;
   }
-
+    struct in_addr lmp_addr = longest_matching_entry->gw.s_addr;
     struct sr_if *iFace = sr_get_interface(sr, longest_matching_entry->interface);
-    struct sr_arpentry *arp_req = sr_arpcache_lookup(&(sr->cache), longest_matching_entry->gw.s_addr);
+    struct sr_arpentry *arp_req = sr_arpcache_lookup(&(sr->cache), lmp_addr);
     
     if (arp_req)
     {
@@ -250,7 +250,7 @@ void send_icmp_packet(struct sr_instance *sr,
     {
       ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
       ip_hdr->ip_src = iFace->ip;
-      struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),longest_matching_entry->gw.s_addr,packet,sizeof(packet),iFace->name);
+      struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),lmp_addr,packet,sizeof(packet),iFace->name);
       handle_arpreq(sr, arpReq);
     }
 }
