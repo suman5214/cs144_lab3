@@ -90,8 +90,6 @@ struct sr_if* sr_get_interface_given_ip(struct sr_instance* sr, uint32_t ip)
 void icmp_direct_echo_reply(struct sr_instance *sr,
   uint8_t *packet /* lent */,
   unsigned int len,
-  uint8_t *srcAddr,
-  uint8_t *destAddr,
   char *interface /* lent */,
   sr_ethernet_hdr_t *eth_hdr,
   sr_ip_hdr_t *ipHdr,
@@ -110,6 +108,11 @@ icmpHdr->icmp_sum = icmp_cksum(icmpHdr, len - icmpOffset);
 ipHdr->ip_dst = ipHdr->ip_src;
 ipHdr->ip_src = myInterface->ip;
 ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
+
+uint8_t *destAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
+uint8_t *srcAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
+memcpy(destAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+memcpy(srcAddr, eth_hdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
 
 memcpy(eth_hdr->ether_dhost, srcAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
 memcpy(eth_hdr->ether_shost, destAddr, sizeof(uint8_t) * ETHER_ADDR_LEN);
@@ -132,10 +135,7 @@ void sr_handlepacket(struct sr_instance *sr,
   print_hdr_eth(packet);
 
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
-  uint8_t *destAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-  uint8_t *srcAddr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
-  memcpy(destAddr, eth_hdr->ether_dhost, sizeof(uint8_t) * ETHER_ADDR_LEN);
-  memcpy(srcAddr, eth_hdr->ether_shost, sizeof(uint8_t) * ETHER_ADDR_LEN);
+
   uint16_t pktType = ntohs(eth_hdr->ether_type);
 
   if (is_packet_valid(packet, len))
@@ -347,11 +347,6 @@ void sr_handle_ip_packet(struct sr_instance *sr,
 {
   
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
-  uint8_t *destAddr = malloc( ETHER_ADDR_LEN);
-  uint8_t *srcAddr = malloc( ETHER_ADDR_LEN);
-  memcpy(destAddr, eth_hdr->ether_dhost,  ETHER_ADDR_LEN);
-  memcpy(srcAddr, eth_hdr->ether_shost,  ETHER_ADDR_LEN);
-
   printf("*** -> It is an IP packet. Print IP header.\n");
 
   struct sr_ip_hdr *ipHdr = (struct sr_ip_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
@@ -380,7 +375,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
       if (icmpHdr->icmp_type == 8)
       {
         printf("******** -> It is an ICMP echo request. Send ICMP echo reply.\n");
-        icmp_direct_echo_reply(sr, packet, len, srcAddr, destAddr, interface, eth_hdr, ipHdr, icmpHdr);
+        icmp_direct_echo_reply(sr, packet, len, interface, eth_hdr, ipHdr, icmpHdr);
         printf("********* -> ICMP echo request processing complete.\n");
       }
     }
