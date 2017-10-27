@@ -233,8 +233,11 @@ void sr_send_icmp_error_packet(uint8_t type,
 
   printf("### -> Check routing table, perform LPM.\n");
   struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ipDst);
-  if (longest_matching_entry)
+  if (!longest_matching_entry)
   {
+    printf("#### -> Match NOT found \n");
+    return;
+  }
     printf("#### -> Match found in routing table. Check ARP cache.\n");
 
     struct sr_if *interface = sr_get_interface(sr, longest_matching_entry->interface);
@@ -261,7 +264,6 @@ void sr_send_icmp_error_packet(uint8_t type,
                                                       &(interface->name));
       handle_arpreq(sr, arpReq);
     }
-  }
 }
 
 
