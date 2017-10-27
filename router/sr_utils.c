@@ -19,39 +19,6 @@ uint16_t cksum (const void *_data, int len) {
   return sum ? sum : 0xffff;
 }
 
-uint32_t ip_cksum (sr_ip_hdr_t *ipHdr, int len) {
-    uint16_t currChksum, calcChksum;
-
-    currChksum = ipHdr->ip_sum; 
-    ipHdr->ip_sum = 0;
-    calcChksum = cksum(ipHdr, len);
-    ipHdr->ip_sum = currChksum;    
-
-    return calcChksum;
-}
-
-uint32_t icmp_cksum (sr_icmp_hdr_t *icmpHdr, int len) {
-    uint16_t currChksum, calcChksum;
-
-    currChksum = icmpHdr->icmp_sum; 
-    icmpHdr->icmp_sum = 0;
-    calcChksum = cksum(icmpHdr, len);
-    icmpHdr->icmp_sum = currChksum;
-
-    return calcChksum;
-}
-
-uint32_t icmp3_cksum(sr_icmp_t3_hdr_t *icmp3Hdr, int len) {
-    uint16_t currChksum, calcChksum;
-
-    currChksum = icmp3Hdr->icmp_sum;
-    icmp3Hdr->icmp_sum = 0;
-    calcChksum = cksum(icmp3Hdr, len);
-    icmp3Hdr->icmp_sum = currChksum;
-    
-    return calcChksum;
-}
-
 int is_packet_valid(uint8_t *packet /* lent */,
     unsigned int len) {
 
