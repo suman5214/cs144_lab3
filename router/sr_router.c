@@ -190,11 +190,10 @@ void sr_handlepacket(struct sr_instance *sr,
 
 
 /* Send an ICMP error. */
-void sr_send_icmp_error_packet(uint8_t type,
-                               uint8_t code,
-                               struct sr_instance *sr,
-                               uint32_t ipDst,
-                               uint8_t *ipPacket)
+void sr_send_icmp_error_packet(struct sr_instance *sr,
+                               uint8_t *ipPacket,
+                               uint8_t type,
+                               uint8_t code)
 {
 
   printf("### -> Send ICMP error.\n");
@@ -225,14 +224,14 @@ void sr_send_icmp_error_packet(uint8_t type,
   ip_hdr->ip_off = htons(IP_DF);
   ip_hdr->ip_ttl = 255;
   ip_hdr->ip_p = ip_protocol_icmp;
-  ip_hdr->ip_dst = ipDst;
+  ip_hdr->ip_dst = ipPacket->ip_dst;
   
   memcpy(icmp3Hdr->data, ipPacket, ICMP_DATA_SIZE);
 
   icmp3Hdr->icmp_sum = icmp3_cksum(icmp3Hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
 
   printf("### -> Check routing table, perform LPM.\n");
-  struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ipDst);
+  struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ipPacket->ip_dst);
   if (!longest_matching_entry)
   {
     printf("#### -> Match NOT found in routing table. Check ARP cache.\n");
@@ -357,9 +356,8 @@ void sr_handle_ip_packet(struct sr_instance *sr,
     }
     else
     {
-      sr_send_icmp_error_packet(3, 3, sr, ip_hdr->ip_src, (uint8_t *)ip_hdr);
+      sr_send_icmp_error_packet(sr,ip_hdr,3, 3);
     }
-
   }
   else
   {
@@ -387,7 +385,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
     }
     else
     {
-      sr_send_icmp_error_packet(11, 0, sr, ip_hdr->ip_src, (uint8_t *)ip_hdr);
+      sr_send_icmp_error_packet(sr,ip_hdr,11, 0);
     }
   }
 }
