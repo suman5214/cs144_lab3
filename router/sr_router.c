@@ -278,9 +278,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
   sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
-  unsigned char senderHardAddr[ETHER_ADDR_LEN], targetHardAddr[ETHER_ADDR_LEN];
-  memcpy(senderHardAddr, apr_hdr->ar_sha, ETHER_ADDR_LEN);
-  memcpy(targetHardAddr, apr_hdr->ar_tha, ETHER_ADDR_LEN);
+
 
   struct sr_arpentry *cached = sr_arpcache_lookup(&(sr->cache), apr_hdr->ar_sip);
   struct sr_if *myInterface = sr_get_interface_given_ip(sr, apr_hdr->ar_tip);
@@ -298,24 +296,29 @@ void sr_handle_arp_packet(struct sr_instance *sr,
       memcpy(eth_hdr->ether_shost, myInterface->addr, ETHER_ADDR_LEN);
       memcpy(eth_hdr->ether_dhost, apr_hdr->ar_sha, ETHER_ADDR_LEN);
 
+      unsigned char temp[ETHER_ADDR_LEN];
+      memcpy(temp, apr_hdr->ar_sha, ETHER_ADDR_LEN);
+      
+      /*UPdate APR package MAC*/
       memcpy(apr_hdr->ar_sha, myInterface->addr, ETHER_ADDR_LEN);
-      memcpy(apr_hdr->ar_tha, senderHardAddr, ETHER_ADDR_LEN);
+      memcpy(apr_hdr->ar_tha, temp, ETHER_ADDR_LEN);
+
+      /*UPdate APR package IP*/
       apr_hdr->ar_sip = apr_hdr->ar_tip;
       apr_hdr->ar_tip = apr_hdr->ar_sip;
       apr_hdr->ar_op = htons(arp_op_reply);
       sr_send_packet(sr, packet, len, myInterface->name);
     }
-    printf("******* -> ARP request processing complete.\n");
+    printf("ARP request processing complete.\n");
   }
   else if (ntohs(apr_hdr->ar_op) == arp_op_reply)
   {
-    printf("**** -> It is an ARP reply.\n");
-    printf("***** -> Add MAC->IP mapping of sender to my ARP cache.\n");
+    printf("It is an ARP reply.\n");
 
-    struct sr_arpreq *arpReq = sr_arpcache_insert(&(sr->cache), senderHardAddr, apr_hdr->ar_sip);
+    struct sr_arpreq *arpReq = sr_arpcache_insert(&(sr->cache), apr_hdr->ar_sha, apr_hdr->ar_sip);
     if (!arpReq)
     {
-      printf("****** -> Send outstanding packets.\n");
+      printf("Send outstanding packets.\n");
 
       struct sr_packet *unsent_packet = arpReq->packets;
       
@@ -324,7 +327,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
       {
         sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)unsent_packet->buf;
         memcpy(eth_hdr->ether_shost, myInterface->addr, ETHER_ADDR_LEN);
-        memcpy(eth_hdr->ether_dhost, senderHardAddr, ETHER_ADDR_LEN);
+        memcpy(eth_hdr->ether_dhost, apr_hdr->ar_sha, ETHER_ADDR_LEN);
 
         sr_send_packet(sr, unsent_packet->buf, unsent_packet->len, myInterface);
         unsent_packet = unsent_packet->next;
