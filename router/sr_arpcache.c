@@ -40,7 +40,46 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
     {
         if (req->times_sent < 5)
         {
-            sr_arp_request_send(sr, req->ip); 
+            
+              uint8_t *mac_addr = malloc(sizeof(uint8_t) * ETHER_ADDR_LEN);
+              mac_addr[0] = 255;
+              mac_addr[1] = 255;
+              mac_addr[2] = 255;
+              mac_addr[3] = 255;
+              mac_addr[4] = 255;
+              mac_addr[5] = 255;
+              int arpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+              uint8_t *arpPacket = malloc(arpPacketLen);
+            
+              sr_ethernet_hdr_t *eth_hdr = (struct sr_ethernet_hdr *)arpPacket;
+              memcpy(eth_hdr->ether_dhost, mac_addr, ETHER_ADDR_LEN);
+            
+              struct sr_if *currIf = sr->if_list;
+              uint8_t *copyPacket;
+              while (currIf != NULL)
+              {            
+                memcpy(eth_hdr->ether_shost, (uint8_t *)currIf->addr, ETHER_ADDR_LEN);
+                eth_hdr->ether_type = htons(ethertype_arp);
+            
+                sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(arpPacket + sizeof(sr_ethernet_hdr_t));
+                apr_hdr->ar_hrd = htons(1);
+                apr_hdr->ar_pro = htons(2048);
+                apr_hdr->ar_hln = 6;
+                apr_hdr->ar_pln = 4;
+                apr_hdr->ar_op = htons(arp_op_request);
+                memcpy(apr_hdr->ar_sha, currIf->addr, ETHER_ADDR_LEN);
+                memcpy(apr_hdr->ar_tha, (char *)mac_addr, ETHER_ADDR_LEN);
+                apr_hdr->ar_sip = currIf->ip;
+                apr_hdr->ar_tip = req->ip;
+            
+                copyPacket = malloc(arpPacketLen);
+                memcpy(copyPacket, eth_hdr, arpPacketLen);
+                print_hdrs(copyPacket, arpPacketLen);
+                sr_send_packet(sr, copyPacket, arpPacketLen, currIf->name);
+            
+                currIf = currIf->next;
+              }
+
             req->sent = t;
             req->times_sent = req->times_sent + 1;
         }
