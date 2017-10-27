@@ -54,11 +54,11 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
               sr_ethernet_hdr_t *eth_hdr = (struct sr_ethernet_hdr *)arpPacket;
               memcpy(eth_hdr->ether_dhost, mac_addr, ETHER_ADDR_LEN);
             
-              struct sr_if *currIf = sr->if_list;
+              struct sr_if *iFace = sr->if_list;
               uint8_t *copyPacket;
-              while (currIf)
+              while (iFace)
               {            
-                memcpy(eth_hdr->ether_shost, (uint8_t *)currIf->addr, ETHER_ADDR_LEN);
+                memcpy(eth_hdr->ether_shost, (uint8_t *)iFace->addr, ETHER_ADDR_LEN);
                 eth_hdr->ether_type = htons(ethertype_arp);
             
                 sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(arpPacket + sizeof(sr_ethernet_hdr_t));
@@ -67,17 +67,17 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
                 apr_hdr->ar_hln = ETHER_ADDR_LEN;
                 apr_hdr->ar_pln = 4;
                 apr_hdr->ar_op = htons(arp_op_request);
-                memcpy(apr_hdr->ar_sha, currIf->addr, ETHER_ADDR_LEN);
+                memcpy(apr_hdr->ar_sha, iFace->addr, ETHER_ADDR_LEN);
                 memcpy(apr_hdr->ar_tha, (char *)mac_addr, ETHER_ADDR_LEN);
-                apr_hdr->ar_sip = currIf->ip;
+                apr_hdr->ar_sip = iFace->ip;
                 apr_hdr->ar_tip = req->ip;
             
                 copyPacket = malloc(arpPacketLen);
                 memcpy(copyPacket, eth_hdr, arpPacketLen);
                 print_hdrs(copyPacket, arpPacketLen);
-                sr_send_packet(sr, copyPacket, arpPacketLen, currIf->name);
+                sr_send_packet(sr, arpPacket, arpPacketLen, iFace->name);
             
-                currIf = currIf->next;
+                iFace = iFace->next;
               }
 
             req->sent = t;
