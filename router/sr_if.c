@@ -55,16 +55,6 @@ struct sr_if* sr_get_interface(struct sr_instance* sr, const char* name)
 } /* -- sr_get_interface -- */
 
 /*--------------------------------------------------------------------- 
- * Method: sr_get_interface_given_ip
- * Scope: Global
- *
- * Given an interface IP address return the interface record or 0
- * if it doesn't exist.
- *
- *---------------------------------------------------------------------*/
-
-
-/*--------------------------------------------------------------------- 
  * Method: sr_add_interface(..)
  * Scope: Global
  *
