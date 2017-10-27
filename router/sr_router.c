@@ -278,7 +278,6 @@ void sr_handle_arp_packet(struct sr_instance *sr,
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
   sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
-  sr_arp_hrd_t a = malloc(sizeof(sr_arp_hdr_t))
   unsigned char senderHardAddr[ETHER_ADDR_LEN], targetHardAddr[ETHER_ADDR_LEN];
   memcpy(senderHardAddr, apr_hdr->ar_sha, ETHER_ADDR_LEN);
   memcpy(targetHardAddr, apr_hdr->ar_tha, ETHER_ADDR_LEN);
