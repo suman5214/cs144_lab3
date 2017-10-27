@@ -59,7 +59,7 @@ void host_unreachable(struct sr_instance *sr, struct sr_arpreq *req) {
 
     while (currPacket != NULL) {
         send_icmp_packet(sr,((sr_ip_hdr_t*) (currPacket->buf + ipOffset))->ip_src,
-                               currPacket->buf + ipOffset),3, 1;
+                               currPacket->buf + ipOffset,3, 1,0,0);
         currPacket = currPacket->next;
     }
 }
