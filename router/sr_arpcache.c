@@ -52,7 +52,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
               uint8_t *arpPacket = malloc(arpPacketLen);
             
               sr_ethernet_hdr_t *eth_hdr = (struct sr_ethernet_hdr *)arpPacket;
-              memcpy(eth_hdr->ether_dhost, 0xff, ETHER_ADDR_LEN);
+              memcpy(eth_hdr->ether_dhost, mac_addr, ETHER_ADDR_LEN);
             
               struct sr_if *currIf = sr->if_list;
               uint8_t *copyPacket;
@@ -68,7 +68,7 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
                 apr_hdr->ar_pln = 4;
                 apr_hdr->ar_op = htons(arp_op_request);
                 memcpy(apr_hdr->ar_sha, currIf->addr, ETHER_ADDR_LEN);
-                memcpy(apr_hdr->ar_tha, 0x00, ETHER_ADDR_LEN);
+                memcpy(apr_hdr->ar_tha, (char *)mac_addr, ETHER_ADDR_LEN);
                 apr_hdr->ar_sip = currIf->ip;
                 apr_hdr->ar_tip = req->ip;
             
