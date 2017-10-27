@@ -86,7 +86,7 @@ void sr_init(struct sr_instance *sr)
     return 0;
 }
 
-struct sr_rt *sr_get_lpm_entry(struct sr_rt *rt, uint32_t ip) {
+struct sr_rt *find_longest_entry(struct sr_rt *rt, uint32_t ip) {
   struct sr_rt *returnRT = NULL;
   unsigned long int max = 0;
   while (rt) {
@@ -187,7 +187,7 @@ void send_icmp_packet(struct sr_instance *sr,uint32_t sender_add,uint8_t *icmp_p
     
 
 
-    struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, sender_add);
+    struct sr_rt *longest_matching_entry = find_longest_entry(sr->routing_table, sender_add);
     if (!longest_matching_entry)
     {
       printf("No MAC->IP record in talbe\n");
@@ -285,7 +285,7 @@ void handle_IP(struct sr_instance *sr,uint8_t *packet /* lent */,unsigned int le
 
   struct sr_ip_hdr *ip_hdr = (struct sr_ip_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
   struct sr_if *curIFACE = get_IP(sr, ip_hdr->ip_dst);
-  struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ip_hdr->ip_dst);
+  struct sr_rt *longest_matching_entry = find_longest_entry(sr->routing_table, ip_hdr->ip_dst);
   uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
 
   if (curIFACE)
