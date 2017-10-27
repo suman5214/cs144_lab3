@@ -177,10 +177,10 @@ void send_icmp_packet(struct sr_instance *sr,
         ip_hdr->ip_src = Iface->ip;
 
         uint16_t currChksum, calcChksum;
-        currChksum = ipHdr->ip_sum; 
-        ipHdr->ip_sum = 0;
-        calcChksum = cksum(ipHdr, len);
-        ipHdr->ip_sum = calcChksum;
+        currChksum = ip_hdr->ip_sum; 
+        ip_hdr->ip_sum = 0;
+        calcChksum = cksum(ip_hdr, len);
+        ip_hdr->ip_sum = calcChksum;
 
 
         memcpy(eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN); 
