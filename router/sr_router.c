@@ -175,7 +175,7 @@ void send_icmp_packet(struct sr_instance *sr,
         /*Set ip header*/
         ip_hdr->ip_dst = ip_hdr->ip_src;
         ip_hdr->ip_src = Iface->ip;
-        
+        ip_hdr->ip_sum = 0;
 
         memcpy(eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN); 
         memcpy(eth_hdr->ether_shost, tempAddr, ETHER_ADDR_LEN);
