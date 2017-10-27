@@ -56,15 +56,15 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
             
               struct sr_if *currIf = sr->if_list;
               uint8_t *copyPacket;
-              while (currIf != NULL)
+              while (currIf)
               {            
                 memcpy(eth_hdr->ether_shost, (uint8_t *)currIf->addr, ETHER_ADDR_LEN);
                 eth_hdr->ether_type = htons(ethertype_arp);
             
                 sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(arpPacket + sizeof(sr_ethernet_hdr_t));
-                apr_hdr->ar_hrd = htons(1);
-                apr_hdr->ar_pro = htons(2048);
-                apr_hdr->ar_hln = 6;
+                apr_hdr->ar_hrd = htons(arp_hrd_ethernet);
+                apr_hdr->ar_pro = htons(ethertype_ip);
+                apr_hdr->ar_hln = ETHER_ADDR_LEN;
                 apr_hdr->ar_pln = 4;
                 apr_hdr->ar_op = htons(arp_op_request);
                 memcpy(apr_hdr->ar_sha, currIf->addr, ETHER_ADDR_LEN);
