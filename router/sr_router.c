@@ -242,8 +242,12 @@ void send_icmp_packet(struct sr_instance *sr,
     ip_hdr->ip_ttl = 255;
     ip_hdr->ip_p = ip_protocol_icmp;
     
-    
-    icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t)); 
+    uint16_t currChksum, calcChksum;
+    currChksum = icmp_hdr->icmp_sum; 
+    icmp_hdr->icmp_sum = 0;
+    calcChksum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
+    icmp_hdr->icmp_sum = currChksum;
+    icmp_hdr->icmp_sum = calcChksum;
 
     struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, sender_add);
     if (!longest_matching_entry)
