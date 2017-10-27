@@ -138,14 +138,14 @@ void icmp_direct_echo_reply(struct sr_instance *sr,
 int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
 
 /* We don't have to look up the routing table for this one */
-struct sr_if *myInterface = sr_get_interface(sr, interface);
+struct sr_if *curIFACE = sr_get_interface(sr, interface);
 
 icmpHdr->icmp_type = 0;
 icmpHdr->icmp_code = 0;
 icmpHdr->icmp_sum = icmp_cksum(icmpHdr, len - icmpOffset);
 
 ipHdr->ip_dst = ipHdr->ip_src;
-ipHdr->ip_src = myInterface->ip;
+ipHdr->ip_src = curIFACE->ip;
 ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
 uint8_t *destAddr = malloc(ETHER_ADDR_LEN);
@@ -278,30 +278,30 @@ void sr_handle_arp_packet(struct sr_instance *sr,
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
   sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
-  struct sr_if *myInterface = sr_get_interface_given_ip(sr, apr_hdr->ar_tip);
+  struct sr_if *curIFACE = sr_get_interface_given_ip(sr, apr_hdr->ar_tip);
 
   if (ntohs(apr_hdr->ar_op) == arp_op_request)
   {
     printf("This is a ARP request.\n");
 
-    if (myInterface != 0)
+    if (curIFACE != 0)
     {
       /* Construct ARP packet*/
-      memcpy(eth_hdr->ether_shost, myInterface->addr, ETHER_ADDR_LEN);
+      memcpy(eth_hdr->ether_shost, curIFACE->addr, ETHER_ADDR_LEN);
       memcpy(eth_hdr->ether_dhost, apr_hdr->ar_sha, ETHER_ADDR_LEN);
 
       unsigned char temp[ETHER_ADDR_LEN];
       memcpy(temp, apr_hdr->ar_sha, ETHER_ADDR_LEN);
       
       /*UPdate APR package MAC*/
-      memcpy(apr_hdr->ar_sha, myInterface->addr, ETHER_ADDR_LEN);
+      memcpy(apr_hdr->ar_sha, curIFACE->addr, ETHER_ADDR_LEN);
       memcpy(apr_hdr->ar_tha, temp, ETHER_ADDR_LEN);
 
       /*UPdate APR package IP*/
       apr_hdr->ar_sip = apr_hdr->ar_tip;
       apr_hdr->ar_tip = apr_hdr->ar_sip;
       apr_hdr->ar_op = htons(arp_op_reply);
-      sr_send_packet(sr, packet, len, myInterface->name);
+      sr_send_packet(sr, packet, len, curIFACE->name);
     }
   }
   else if (ntohs(apr_hdr->ar_op) == arp_op_reply)
@@ -319,10 +319,10 @@ void sr_handle_arp_packet(struct sr_instance *sr,
       while (unsent_packet)
       {
         sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)unsent_packet->buf;
-        memcpy(eth_hdr->ether_shost, myInterface->addr, ETHER_ADDR_LEN);
+        memcpy(eth_hdr->ether_shost, curIFACE->addr, ETHER_ADDR_LEN);
         memcpy(eth_hdr->ether_dhost, apr_hdr->ar_sha, ETHER_ADDR_LEN);
 
-        sr_send_packet(sr, unsent_packet->buf, unsent_packet->len, myInterface);
+        sr_send_packet(sr, unsent_packet->buf, unsent_packet->len, curIFACE);
         unsent_packet = unsent_packet->next;
       }
       sr_arpreq_destroy(&(sr->cache), arpReq);
@@ -343,18 +343,18 @@ void sr_handle_ip_packet(struct sr_instance *sr,
   printf("*** -> It is an IP packet. Print IP header.\n");
 
   struct sr_ip_hdr *ipHdr = (struct sr_ip_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
-  struct sr_if *myInterface = sr_get_interface_given_ip(sr, ipHdr->ip_dst);
+  struct sr_if *curIFACE = sr_get_interface_given_ip(sr, ipHdr->ip_dst);
   struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ipHdr->ip_dst);
   uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
 
-  if (!myInterface)
+  if (!curIFACE)
   {
     printf("*** -> Packet is not for one of my interfaces and no match found in routing table. Send ICMP net unreachable.\n");
     sr_send_icmp_error_packet(3, 0, sr, ipHdr->ip_src, ipHdr);
     return;
   }
 
-  if (myInterface)
+  if (curIFACE)
   {
     printf("***** -> IP packet is for one of my interfaces.\n");
 
