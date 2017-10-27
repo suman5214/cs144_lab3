@@ -39,7 +39,13 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
     {
         if (req->times_sent >= 5)
         {
-            host_unreachable(sr, req);
+            struct sr_packet *currPacket = req->packets;
+            
+                sr_ip_hdr_t *ip_hdr =  ((sr_ip_hdr_t*) (currPacket->buf + sizeof(sr_ethernet_hdr_t)));
+                while (currPacket != NULL) {
+                    send_icmp_packet(sr,ip_hdr->ip_src,ip_hdr,3, 1,0,0);
+                    currPacket = currPacket->next;
+            }
             sr_arpreq_destroy(&(sr->cache), req);
         }
         else
@@ -48,19 +54,6 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
             req->sent = now;
             req->times_sent++;
         }
-    }
-}
-
-void host_unreachable(struct sr_instance *sr, struct sr_arpreq *req) {
-    struct sr_packet *currPacket = req->packets;
-
-    int ipOffset = sizeof(sr_ethernet_hdr_t);
-    uint32_t ipDst = req->ip;
-
-    while (currPacket != NULL) {
-        send_icmp_packet(sr,((sr_ip_hdr_t*) (currPacket->buf + ipOffset))->ip_src,
-                               currPacket->buf + ipOffset,3, 1,0,0);
-        currPacket = currPacket->next;
     }
 }
 
