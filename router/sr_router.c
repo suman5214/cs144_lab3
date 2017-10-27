@@ -106,7 +106,7 @@ void sr_arp_request_send(struct sr_instance *sr, uint32_t ip){
   printf("$$$ -> Send ARP request processing complete.\n");
 }
 
- struct sr_if* sr_get_interface_given_ip(struct sr_instance* sr, uint32_t ip)
+ struct sr_if* get_IP(struct sr_instance* sr, uint32_t ip)
 {
     /* -- REQUIRES -- */
     assert(ip);
@@ -171,7 +171,7 @@ void send_icmp_packet(struct sr_instance *sr,
         /*Set icmp header*/
         icmp_hdr->icmp_type = 0;
         icmp_hdr->icmp_code = 0;
-        icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, sizeof(sr_icmp_hdr_t));
+        icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_hdr_t));
         /*Set ip header*/
         ip_hdr->ip_dst = ip_hdr->ip_src;
         ip_hdr->ip_src = Iface->ip;
@@ -252,7 +252,7 @@ void handle_ARP(struct sr_instance *sr,
 {
   sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
-  struct sr_if *curIFACE = sr_get_interface_given_ip(sr, apr_hdr->ar_tip);
+  struct sr_if *curIFACE = get_IP(sr, apr_hdr->ar_tip);
 
   if (ntohs(apr_hdr->ar_op) == arp_op_request)
   {
@@ -317,7 +317,7 @@ void handle_IP(struct sr_instance *sr,
 
 
   struct sr_ip_hdr *ip_hdr = (struct sr_ip_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
-  struct sr_if *curIFACE = sr_get_interface_given_ip(sr, ip_hdr->ip_dst);
+  struct sr_if *curIFACE = get_IP(sr, ip_hdr->ip_dst);
   struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ip_hdr->ip_dst);
   uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
 
