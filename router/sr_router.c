@@ -200,7 +200,7 @@ void sr_send_icmp_error_packet(uint8_t type,
 
   printf("### -> Send ICMP error.\n");
   /* packet initialization */
-  int icmpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+  unsigned int icmpPacketLen = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
   uint8_t *packet = malloc(icmpPacketLen);
 
   /* packet headers */
@@ -209,50 +209,54 @@ void sr_send_icmp_error_packet(uint8_t type,
   sr_icmp_t3_hdr_t *icmp3Hdr = (sr_icmp_t3_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
   /* initialize ethernet header */
-  eth_hdr->ether_type = htons(ethertype_ip);
 
-  /* initialize IP header */
-  ipHdr->ip_hl = 5;
+  eth_hdr->ether_type = htons(ethertype_ip);
+  memset(eth_hdr->ether_dhost, 0, ETHER_ADDR_LEN);
+  memset(eth_hdr->ether_shost, 0, ETHER_ADDR_LEN);
+  
+
+  icmp3Hdr->icmp_code = code;
+  icmp3Hdr->icmp_type = type;
+
+  ipHdr->ip_hl = sizeof(sr_ip_hdr_t) / 4;;
   ipHdr->ip_v = 4;
+  ipHdr->ip_len = htons(sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t));
   ipHdr->ip_tos = 0;
-  ipHdr->ip_len = htons(icmpPacketLen - sizeof(sr_ethernet_hdr_t));
   ipHdr->ip_id = htons(0);
   ipHdr->ip_off = htons(IP_DF);
-  ipHdr->ip_ttl = 64;
+  ipHdr->ip_ttl = 255;
   ipHdr->ip_p = ip_protocol_icmp;
   ipHdr->ip_dst = ipDst;
-
-  /* initialize ICMP header */
-  icmp3Hdr->icmp_type = type;
-  icmp3Hdr->icmp_code = code;
-
+  
   memcpy(icmp3Hdr->data, ipPacket, ICMP_DATA_SIZE);
+
   icmp3Hdr->icmp_sum = icmp3_cksum(icmp3Hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
 
   printf("### -> Check routing table, perform LPM.\n");
   struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, ipDst);
-  if (longest_matching_entry != NULL)
+  if (!longest_matching_entry)
   {
-    printf("#### -> Match found in routing table. Check ARP cache.\n");
+    printf("there is no match in the table");
+    return
+  }
 
     struct sr_if *interface = sr_get_interface(sr, longest_matching_entry->interface);
 
     ipHdr->ip_src = interface->ip;
     ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
 
-    memcpy(eth_hdr->ether_shost, (uint8_t *)interface->addr, ETHER_ADDR_LEN);
     struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), longest_matching_entry->gw.s_addr);
     if (arpEntry != NULL)
     {
       printf("##### -> Next-hop-IP to MAC mapping found in ARP cache. Forward packet to next hop.\n");
-
-      memcpy(eth_hdr->ether_dhost, (uint8_t *)arpEntry->mac, ETHER_ADDR_LEN);
-      print_hdrs(packet, icmpPacketLen);
+      
+      memcpy(eth_hdr->ether_shost, interface->addr, ETHER_ADDR_LEN);
+      memcpy(eth_hdr->ether_dhost, arpEntry->mac, ETHER_ADDR_LEN);
       sr_send_packet(sr, packet, icmpPacketLen, interface->name);
     }
     else
     {
-      printf("##### -> No next-hop-IP to MAC mapping found in ARP cache. Send ARP request to find it.\n");
+      memcpy(eth_hdr->ether_shost, interface->addr, ETHER_ADDR_LEN);
       struct sr_arpreq *arpReq = sr_arpcache_queuereq(&(sr->cache),
                                                       longest_matching_entry->gw.s_addr,
                                                       packet,
@@ -260,8 +264,7 @@ void sr_send_icmp_error_packet(uint8_t type,
                                                       &(interface->name));
       handle_arpreq(sr, arpReq);
     }
-  }
-  printf("###### -> Send ICMP error processing complete.\n");
+
 }
 
 
