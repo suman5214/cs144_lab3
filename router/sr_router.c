@@ -192,7 +192,7 @@ void sr_handlepacket(struct sr_instance *sr,
 /* Send an ICMP error. */
 void send_icmp_packet(struct sr_instance *sr,
                                uint32_t sender_add,
-                               uint8_t *icmp_packet,
+                               uint8_t *ipPacket,
                                uint8_t type,
                                uint8_t code)
 {
@@ -213,8 +213,8 @@ void send_icmp_packet(struct sr_instance *sr,
   
   icmp_hdr->icmp_code = code;
   icmp_hdr->icmp_type = type;
-  memcpy(icmp_hdr->data, icmp_packet, ICMP_DATA_SIZE);
-
+  memcpy(icmp_hdr->data, ipPacket, ICMP_DATA_SIZE);
+  
   /* initialize ip header */
   sr_ip_hdr_t *ip_hdr = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
   ip_hdr->ip_hl = sizeof(sr_ip_hdr_t) / 4;;
@@ -228,20 +228,25 @@ void send_icmp_packet(struct sr_instance *sr,
   ip_hdr->ip_p = ip_protocol_icmp;
   
   
+  
+
   icmp_hdr->icmp_sum = icmp3_cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t)); /* calculate checksum */
 
+  printf("### -> Check routing table, perform LPM.\n");
   struct sr_rt *longest_matching_entry = sr_get_lpm_entry(sr->routing_table, sender_add);
   if (!longest_matching_entry)
   {
-    printf("No MAC->IP record in talbe\n");
+    printf("#### -> Match NOT found in routing table. Check ARP cache.\n");
     return;
   }
+    printf("#### -> Match found in routing table. Check ARP cache.\n");
 
     struct sr_if *interface = sr_get_interface(sr, longest_matching_entry->interface);
 
     ip_hdr->ip_src = interface->ip;
     ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
 
+    
     struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), longest_matching_entry->gw.s_addr);
     if (arpEntry )
     {
