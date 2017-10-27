@@ -140,13 +140,11 @@ int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
 /* We don't have to look up the routing table for this one */
 struct sr_if *myInterface = sr_get_interface(sr, interface);
 
-icmpHdr->icmp_type = 0;
-icmpHdr->icmp_code = 0;
-icmpHdr->icmp_sum = cksum(icmpHdr, sizeof(sr_icmp_t3_hdr_t));
-
 ipHdr->ip_dst = ipHdr->ip_src;
 ipHdr->ip_src = myInterface->ip;
 ipHdr->ip_sum = cksum(ipHdr, sizeof(sr_ip_hdr_t));
+icmpHdr->icmp_type , icmpHdr->icmp_code = 0;
+icmpHdr->icmp_sum = cksum(icmpHdr, sizeof(sr_icmp_t3_hdr_t));
 
 uint8_t *destAddr = malloc(ETHER_ADDR_LEN);
 uint8_t *srcAddr = malloc(ETHER_ADDR_LEN);
@@ -156,7 +154,6 @@ memcpy(srcAddr, eth_hdr->ether_shost, ETHER_ADDR_LEN);
 memcpy(eth_hdr->ether_dhost, srcAddr, ETHER_ADDR_LEN);
 memcpy(eth_hdr->ether_shost, destAddr, ETHER_ADDR_LEN);
 
-print_hdrs(packet, len);
 sr_send_packet(sr, packet, len, interface);
 }
 
