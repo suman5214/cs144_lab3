@@ -238,6 +238,7 @@ void send_icmp_packet(struct sr_instance *sr,
     struct sr_if *interface = sr_get_interface(sr, longest_matching_entry->interface);
 
     ip_hdr->ip_src = interface->ip;
+    ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
 
     struct sr_arpentry *arpEntry = sr_arpcache_lookup(&(sr->cache), longest_matching_entry->gw.s_addr);
     if (arpEntry )
