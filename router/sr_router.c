@@ -336,7 +336,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
     printf("******* -> ARP reply processing complete.\n");
   }
   else{
-    printf("Not valid ARP OP CODE\n")
+    printf("Not valid ARP OP CODE\n");
   }
 }
 
