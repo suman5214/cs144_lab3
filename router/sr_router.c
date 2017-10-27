@@ -278,13 +278,12 @@ void sr_handle_arp_packet(struct sr_instance *sr,
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
   sr_arp_hdr_t *apr_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
+  sr_arp_hrd_t a = malloc(sizeof(sr_arp_hdr_t))
   unsigned char senderHardAddr[ETHER_ADDR_LEN], targetHardAddr[ETHER_ADDR_LEN];
   memcpy(senderHardAddr, apr_hdr->ar_sha, ETHER_ADDR_LEN);
   memcpy(targetHardAddr, apr_hdr->ar_tha, ETHER_ADDR_LEN);
 
-  int update_flag = sr_arpcache_entry_update(&(sr->cache), apr_hdr->ar_sip);
   struct sr_arpentry *cached = sr_arpcache_lookup(&(sr->cache), apr_hdr->ar_sip);
-  /* check if the ARP packet is for one of my interfaces. */
   struct sr_if *myInterface = sr_get_interface_given_ip(sr, apr_hdr->ar_tip);
 
   if (ntohs(apr_hdr->ar_op) == arp_op_request)
@@ -298,7 +297,7 @@ void sr_handle_arp_packet(struct sr_instance *sr,
       printf("****** -> Construct an ARP reply and send it back.\n");
 
       memcpy(eth_hdr->ether_shost, myInterface->addr, ETHER_ADDR_LEN);
-      memcpy(eth_hdr->ether_dhost, senderHardAddr, ETHER_ADDR_LEN);
+      memcpy(eth_hdr->ether_dhost, apr_hdr->ar_sha, ETHER_ADDR_LEN);
 
       memcpy(apr_hdr->ar_sha, myInterface->addr, ETHER_ADDR_LEN);
       memcpy(apr_hdr->ar_tha, senderHardAddr, ETHER_ADDR_LEN);
