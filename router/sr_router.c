@@ -168,7 +168,8 @@ void send_icmp_packet(struct sr_instance *sr,
     
         sr_icmp_hdr_t *icmpHdr = (sr_icmp_hdr_t *)(icmp_packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
         sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)icmp_packet;
-                
+        struct sr_ip_hdr *ip_hdr = (struct sr_ip_hdr *)(icmp_packet + sizeof(sr_ethernet_hdr_t));
+
         struct sr_if *curIFACE = sr_get_interface(sr, interface);
         
         icmpHdr->icmp_type = 0;
@@ -187,7 +188,7 @@ void send_icmp_packet(struct sr_instance *sr,
         memcpy(eth_hdr->ether_dhost, srcAddr, ETHER_ADDR_LEN);
         memcpy(eth_hdr->ether_shost, destAddr, ETHER_ADDR_LEN);
         
-        sr_send_packet(sr, packet, len, interface);
+        sr_send_packet(sr, icmp_packet, len, interface);
         
   }
   else{
@@ -339,7 +340,7 @@ void sr_handle_ip_packet(struct sr_instance *sr,
     
     if (icmpHdr->icmp_type == 8)
     {
-      send_icmp_packet(sr, ip_hdr->ip_src, ip_hdr,0, 0,len,interface);
+      send_icmp_packet(sr, ip_hdr->ip_src, packet,0, 0,len,interface);
     }
     else
     {
