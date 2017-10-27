@@ -137,7 +137,6 @@ void icmp_direct_echo_reply(struct sr_instance *sr,
 
 int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
 
-/* We don't have to look up the routing table for this one */
 struct sr_if *curIFACE = sr_get_interface(sr, interface);
 
 icmpHdr->icmp_type = 0;
@@ -146,7 +145,7 @@ icmpHdr->icmp_sum = cksum(icmpHdr, sizeof(sr_icmp_hdr_t));
 
 ip_hdr->ip_dst = ip_hdr->ip_src;
 ip_hdr->ip_src = curIFACE->ip;
-ip_hdr->ip_sum = ip_cksum(ip_hdr, sizeof(sr_ip_hdr_t));
+ip_hdr->ip_sum = cksum(ip_hdr, sizeof(sr_ip_hdr_t));
 
 uint8_t *destAddr = malloc(ETHER_ADDR_LEN);
 uint8_t *srcAddr = malloc(ETHER_ADDR_LEN);
@@ -156,7 +155,6 @@ memcpy(srcAddr, eth_hdr->ether_shost, ETHER_ADDR_LEN);
 memcpy(eth_hdr->ether_dhost, srcAddr, ETHER_ADDR_LEN);
 memcpy(eth_hdr->ether_shost, destAddr, ETHER_ADDR_LEN);
 
-print_hdrs(packet, len);
 sr_send_packet(sr, packet, len, interface);
 }
 
@@ -342,7 +340,8 @@ void sr_handle_ip_packet(struct sr_instance *sr,
 
     if (icmpHdr->icmp_type == 8)
     {
-      icmp_direct_echo_reply(sr, packet, len, interface, eth_hdr, ip_hdr, icmpHdr);
+      
+      send_icmp_packet(sr, ip_hdr->ip_src, ip_hdr,0, 0);
     }
     else
     {
