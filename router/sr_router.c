@@ -179,7 +179,7 @@ void send_icmp_packet(struct sr_instance *sr,
         
         icmpHdr->icmp_type = 0;
         icmpHdr->icmp_code = 0;
-        icmpHdr->icmp_sum = icmp_cksum(icmpHdr, len - icmpOffset);
+        icmpHdr->icmp_sum = icmp_cksum(icmpHdr, sizeof(sr_icmp_hdr_t));
         
         ip_hdr->ip_dst = ip_hdr->ip_src;
         ip_hdr->ip_src = myInterface->ip;
