@@ -281,7 +281,6 @@ void handle_IP(struct sr_instance *sr,uint8_t *packet /* lent */,unsigned int le
   struct sr_ip_hdr *ip_hdr = (struct sr_ip_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
   struct sr_if *curIFACE = get_IP(sr, ip_hdr->ip_dst);
   struct sr_rt *longest_matching_entry = find_longest_entry(sr->routing_table, ip_hdr->ip_dst);
-  uint8_t ipProtocol = ip_protocol(packet + sizeof(sr_ethernet_hdr_t));
 
   if (curIFACE)
   {
