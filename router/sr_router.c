@@ -85,8 +85,8 @@ struct sr_rt *find_longest_entry(struct sr_rt *rt, uint32_t ip) {
   struct sr_rt *returnRT = NULL;
   unsigned long int max = 0;
   while (rt) {
-    unsigned long int mask_addr = ((unsigned long int) rt->mask.s_addr & (unsigned long int) ip);
-    unsigned long int det_addr = (unsigned long int) rt->dest.s_addr;
+    unsigned long int mask_addr = (rt->mask.s_addr & ip);
+    unsigned long int det_addr =  rt->dest.s_addr;
      if ( mask_addr == det_addr && (rt->mask.s_addr) > max) {
         max = rt->mask.s_addr;
         returnRT = rt;
