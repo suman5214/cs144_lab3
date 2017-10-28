@@ -144,15 +144,12 @@ void send_icmp_packet(struct sr_instance *sr,uint32_t sender_add,uint8_t *icmp_p
 
         memcpy(eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN); 
         memcpy(eth_hdr->ether_shost, tempAddr, ETHER_ADDR_LEN);
-        
         sr_send_packet(sr, icmp_packet, len, interface);
   }
   else{
     uint8_t *packet = malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t));
-
     sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
 
-    
     /* initialize ethernet header */
 
     eth_hdr->ether_type = htons(ethertype_ip);
@@ -180,8 +177,6 @@ void send_icmp_packet(struct sr_instance *sr,uint32_t sender_add,uint8_t *icmp_p
     ip_hdr->ip_ttl = 255;
     ip_hdr->ip_p = ip_protocol_icmp;
     
-
-
     struct sr_rt *longest_matching_entry = find_longest_entry(sr->routing_table, sender_add);
     if (!longest_matching_entry)
     {
@@ -251,16 +246,13 @@ void handle_ARP(struct sr_instance *sr,uint8_t *packet ,unsigned int len,char *i
     if (!arp_req)
     {
       printf("Send outstanding packets.\n");
-
       struct sr_packet *unsent_packet = arp_req->packets;
-      
 
       while (unsent_packet)
       {
         sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)unsent_packet->buf;
         memcpy(eth_hdr->ether_shost, curIFACE->addr, ETHER_ADDR_LEN);
         memcpy(eth_hdr->ether_dhost, apr_hdr->ar_sha, ETHER_ADDR_LEN);
-
         sr_send_packet(sr, unsent_packet->buf, unsent_packet->len, curIFACE);
         unsent_packet = unsent_packet->next;
       }
@@ -276,8 +268,6 @@ void handle_IP(struct sr_instance *sr,uint8_t *packet /* lent */,unsigned int le
 {
   
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
-
-
   struct sr_ip_hdr *ip_hdr = (struct sr_ip_hdr *)(packet + sizeof(sr_ethernet_hdr_t));
   struct sr_if *curIFACE = get_IP(sr, ip_hdr->ip_dst);
   struct sr_rt *longest_matching_entry = find_longest_entry(sr->routing_table, ip_hdr->ip_dst);
@@ -297,7 +287,6 @@ void handle_IP(struct sr_instance *sr,uint8_t *packet /* lent */,unsigned int le
   }
   else
   {
-
     if (ip_hdr->ip_ttl > 0)
     {
       ip_hdr->ip_sum = 0;
